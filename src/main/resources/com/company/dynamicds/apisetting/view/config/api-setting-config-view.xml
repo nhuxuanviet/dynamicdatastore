@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://apiSettingConfigView.title"
+      focusComponent="form">
+    <data>
+        <instance id="apiSettingDc"
+                  class="com.company.dynamicds.entity.ApiSetting">
+            <fetchPlan extends="_base">
+                <property fetchPlan="_base" name="apiQueryParam">
+                    <property name="apiSetting" fetchPlan="_base"/>
+                </property>
+                <property fetchPlan="_base" name="apiHeader"/>
+                <property fetchPlan="_base" name="authorization"/>
+                <property fetchPlan="_base" name="apiBody">
+                    <property fetchPlan="_base" name="formDataFields"/>
+                    <property name="urlFormEncodedField" fetchPlan="_base"/>
+                </property>
+            </fetchPlan>
+            <collection id="apiQueryParamDc" property="apiQueryParam"/>
+            <instance id="authorizationDc" property="authorization"/>
+            <collection id="apiHeaderDc" property="apiHeader"/>
+            <instance id="apiBodyDc" property="apiBody">
+                <collection id="formDataFieldsDc" property="formDataFields"/>
+                <collection id="urlFormEncodedFieldDc" property="urlFormEncodedField"/>
+            </instance>
+
+            <loader id="apiSettingDl"/>
+        </instance>
+    </data>
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+    </facets>
+    <actions>
+        <action id="saveAction" type="detail_saveClose"/>
+        <action id="closeAction" type="detail_close"/>
+    </actions>
+    <layout>
+        <formLayout id="form" dataContainer="apiSettingDc">
+            <responsiveSteps>
+                <responsiveStep minWidth="0" columns="1"/>
+                <responsiveStep minWidth="40em" columns="10"/>
+            </responsiveSteps>
+            <textField id="nameField" property="name" colspan="2"/>
+            <textField id="baseUrlField" property="baseUrl" colspan="8"/>
+            <comboBox id="httpMethodField" property="httpMethod" colspan="1"/>
+            <textField id="finalUrlField" property="finalUrl" colspan="8" readOnly="true">
+            </textField>
+            <button id="sendButton" text="Send" themeNames="primary" colspan="1"/>
+        </formLayout>
+        <split orientation="VERTICAL" width="100%" height="100%" splitterPosition="45" themeNames="splitter-spacing">
+            <tabSheet width="100%" height="100%">
+                <tab id="paramsTab" label="Params">
+                    <fragment id="paramsFragment" class="com.company.dynamicds.view.config.fragment.ParamsFragment"
+                              css="width: 100%; height: 100%;"/>
+                </tab>
+                <tab id="authTab" label="Authorization">
+                    <fragment id="authFragment" class="com.company.dynamicds.view.config.fragment.AuthFragment"
+                              css="width: 100%; height: 100%;"/>
+                </tab>
+                <tab id="headerTab" label="Header">
+                    <fragment id="headerFragment" class="com.company.dynamicds.view.config.fragment.HeaderFragment"
+                              css="width: 100%; height: 100%;"/>
+                </tab>
+                <tab id="bodyTab" label="Body">
+                    <fragment id="bodyFragment" class="com.company.dynamicds.view.config.fragment.BodyFragment"
+                              css="width: 100%; height: 100%;"/>
+                </tab>
+                <tab id="scriptsTab" label="Scripts">
+                    <fragment id="scriptsFragment" class="com.company.dynamicds.view.config.fragment.ScriptsFragment"
+                              css="width: 100%; height: 100%;"/>
+                </tab>
+            </tabSheet>
+            <fragment id="apiResponseFragment" class="com.company.dynamicds.view.config.fragment.ApiResponseFragment"/>
+        </split>
+        <hbox id="detailActions">
+            <button id="saveAndCloseButton" action="saveAction"/>
+            <button id="closeButton" action="closeAction"/>
+        </hbox>
+    </layout>
+</view>

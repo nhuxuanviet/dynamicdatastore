@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://metadataDefinitionDetailView.title"
+      focusComponent="form">
+    <data>
+        <collection id="dynamicDataStoreConfigsDc" class="com.company.dynamicds.dynamicds.entity.DynamicDataStoreConfig">
+            <loader id="dynamicDataStoreConfigsDl" readOnly="true">
+                <query>
+                    <![CDATA[select e from dwh_DynamicDataStore e]]>
+                </query>
+            </loader>
+            <fetchPlan extends="_base"/>
+        </collection>
+        <instance id="metadataDefinitionDc" class="com.company.dynamicds.dynamicds.entity.MetadataDefinition">
+            <loader id="metadataDefinitionDl"/>
+            <collection id="metadataFieldsDc" property="metadataFields"/>
+            <fetchPlan extends="_base">
+                <property name="metadataFields" fetchPlan="_base"/>
+            </fetchPlan>
+        </instance>
+
+    </data>
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+    </facets>
+    <actions>
+        <action id="saveAction" type="detail_saveClose"/>
+        <action id="closeAction" type="detail_close"/>
+    </actions>
+    <layout>
+
+        <formLayout id="form" dataContainer="metadataDefinitionDc">
+            <responsiveSteps>
+                <responsiveStep minWidth="0" columns="1"/>
+                <responsiveStep minWidth="40em" columns="2"/>
+            </responsiveSteps>
+            <textField id="nameField" property="name"/>
+            <textField id="urlField" property="url"/>
+            <comboBox id="storeNameField" property="storeName"/>
+            <button id="generateFromUrlButton" text="Generate from URL" icon="EDIT"/>
+        </formLayout>
+        <dataGrid id="metadataFieldsDataGrid" dataContainer="metadataFieldsDc" minWidth="100px" width="100%">
+            <actions>
+                <action id="create" type="list_create"/>
+                <action id="edit" type="list_edit"/>
+                <action id="remove" type="list_remove"/>
+            </actions>
+            <columns>
+                <column property="name"/>
+                <column property="fieldType"/>
+                <column property="description" editable="true"/>
+                <column property="require" editable="true"/>
+            </columns>
+        </dataGrid>
+        <hbox id="detailActions">
+            <button id="saveAndCloseButton" action="saveAction"/>
+            <button id="closeButton" action="closeAction"/>
+        </hbox>
+    </layout>
+</view>

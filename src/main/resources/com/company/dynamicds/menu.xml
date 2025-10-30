@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<menu-config xmlns="http://jmix.io/schema/flowui/menu">
+
+    <menu id="application" title="msg://com.company.dynamicds/menu.application.title" opened="true">
+        <item view="User.list" title="msg://com.company.dynamicds.view.user/UserListView.title"/>
+        <item view="dwh_DynamicDataStore.list" title="msg://com.company.dynamicds.view.dynamicdatastore/dynamicDataStoreListView.title"/>
+        <item view="dwh_MetadataDefinition.list" title="msg://com.company.dynamicds.view.dynamicdatastore.metadata/metadataDefinitionListView.title"/>
+        <item view="dwh_ManageMetadataView" title="msg://com.company.dynamicds.view.dynamicdatastore.metadata/manageMetadataView.title"/>
+    </menu>
+    <menu opened="true" id="data_sharing" title="msg://com.company.dynamicds/menu_config.data-sharing.title" icon="vaadin:share">
+        <item view="dwh_ApiSetting.list" title="msg://com.company.dynamicds.apisetting.view/apiSettingListView.title" icon="vaadin:share"/>
+    </menu>
+
+
+</menu-config>

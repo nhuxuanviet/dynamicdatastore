@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://metadataDefinitionListView.title"
+      focusComponent="metadataDefinitionsDataGrid">
+    <data>
+        <collection id="metadataDefinitionsDc"
+                    class="com.company.dynamicds.dynamicds.entity.MetadataDefinition">
+            <fetchPlan extends="_base"/>
+            <loader id="metadataDefinitionsDl" readOnly="true">
+                <query>
+                    <![CDATA[select e from dwh_MetadataDefinition e]]>
+                </query>
+            </loader>
+        </collection>
+    </data>
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+        <urlQueryParameters>
+            <genericFilter component="genericFilter"/>
+            <pagination component="pagination"/>
+        </urlQueryParameters>
+    </facets>
+    <actions>
+        <action id="selectAction" type="lookup_select"/>
+        <action id="discardAction" type="lookup_discard"/>
+    </actions>
+    <layout>
+        <genericFilter id="genericFilter"
+                       dataLoader="metadataDefinitionsDl">
+            <properties include=".*"/>
+        </genericFilter>
+        <hbox id="buttonsPanel" classNames="buttons-panel">
+            <button id="createButton" action="metadataDefinitionsDataGrid.createAction"/>
+            <button id="editButton" action="metadataDefinitionsDataGrid.editAction"/>
+            <button id="removeButton" action="metadataDefinitionsDataGrid.removeAction"/>
+            <simplePagination id="pagination" dataLoader="metadataDefinitionsDl"/>
+        </hbox>
+        <dataGrid id="metadataDefinitionsDataGrid"
+                  width="100%"
+                  minHeight="20em"
+                  dataContainer="metadataDefinitionsDc"
+                  columnReorderingAllowed="true">
+            <actions>
+                <action id="createAction" type="list_create"/>
+                <action id="editAction" type="list_edit"/>
+                <action id="removeAction" type="list_remove"/>
+            </actions>
+            <columns resizable="true">
+                <column property="name"/>
+                <column property="storeName"/>
+                <column property="url"/>
+            </columns>
+        </dataGrid>
+        <hbox id="lookupActions" visible="false">
+            <button id="selectButton" action="selectAction"/>
+            <button id="discardButton" action="discardAction"/>
+        </hbox>
+    </layout>
+</view>

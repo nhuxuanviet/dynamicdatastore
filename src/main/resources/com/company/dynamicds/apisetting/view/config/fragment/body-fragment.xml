@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<fragment xmlns="http://jmix.io/schema/flowui/fragment">
+    <data>
+        <instance id="apiSettingDc"
+                  class="com.company.dynamicds.entity.ApiSetting" provided="true">
+            <fetchPlan extends="_base">
+                <property fetchPlan="_base" name="apiBody">
+                    <property fetchPlan="_base" name="formDataFields"/>
+                    <property fetchPlan="_base" name="urlFormEncodedField"/>
+                </property>
+            </fetchPlan>
+            <instance id="apiBodyDc" property="apiBody" provided="true">
+                <collection id="formDataFieldsDc" property="formDataFields" provided="true"/>
+                <collection id="urlFormEncodedFieldDc" property="urlFormEncodedField" provided="true"/>
+            </instance>
+        </instance>
+    </data>
+    <content>
+        <vbox id="root">
+            <formLayout dataContainer="apiBodyDc" width="100%">
+                <responsiveSteps>
+                    <responsiveStep minWidth="0" columns="1"/>
+                </responsiveSteps>
+
+                <hbox width="100%" wrap="true">
+                    <radioButtonGroup id="bodyTypeField" property="bodyType" label=" " alignSelf="START">
+                    </radioButtonGroup>
+                    <comboBox id="rawTypeField" property="rawType" themeNames="small" visible="false"/>
+                </hbox>
+
+
+                <vbox id="formDataFields" spacing="true" padding="true" visible="false" width="100%">
+                    <hbox id="buttonsPanel">
+                        <button id="createFormDataBtn" text="New" themeNames="primary"/>
+                    </hbox>
+                    <dataGrid id="apiFormDataFieldsDataGrid" dataContainer="formDataFieldsDc"
+                              width="100%"
+                              columnReorderingAllowed="true">
+                        <actions>
+                            <action id="create" type="list_create"/>
+                            <action id="edit" type="list_edit"/>
+                            <action id="remove" type="list_remove"/>
+                        </actions>
+                        <columns>
+                            <column property="key" editable="true"
+                                    resizable="true"
+                                    width="20%"/>
+                            <column key="dataType" property="dataType" editable="true"
+                                    resizable="true"
+                                    width="15%"/>
+                            <column key="value" property="value" editable="true"
+                                    resizable="true"
+                                    width="20%"/>
+                            <column property="description" editable="true"
+                                    resizable="true"
+                                    width="30%"/>
+                            <column key="actionColumn" header="msg://com.company.dynamicds.view.document/actionListHeader"
+                                    resizable="true"
+                                    width="15%"/>
+                        </columns>
+                    </dataGrid>
+                </vbox>
+
+                <vbox id="urlFormEncodedField" spacing="true" padding="true" visible="false" width="100%">
+                    <hbox id="buttonsPanel">
+                        <button id="createUrlEncodedBtn" text="New" themeNames="primary"/>
+                    </hbox>
+                    <dataGrid id="apiUrlEncodedFieldsDataGrid" dataContainer="urlFormEncodedFieldDc"
+                              width="100%"
+                              columnReorderingAllowed="true">
+                        <actions>
+                            <action id="create" type="list_create"/>
+                            <action id="edit" type="list_edit"/>
+                            <action id="remove" type="list_remove"/>
+                        </actions>
+                        <columns>
+                            <column property="key" editable="true"
+                                    resizable="true"
+                                    width="25%"/>
+                            <column property="value" editable="true"
+                                    resizable="true"
+                                    width="25%"/>
+                            <column property="description" editable="true"
+                                    resizable="true"
+                                    width="35%"/>
+                            <column key="actionColumn" header="msg://com.company.dynamicds.view.document/actionListHeader"
+                                    resizable="true"
+                                    width="15%"/>
+                        </columns>
+                    </dataGrid>
+
+                </vbox>
+
+
+                <codeEditor id="rawBodyField" property="rawContent" label=" " textWrap="true"
+                            showPrintMargin="false" visible="false"/>
+
+
+                <fileUploadField id="fileUploadField" label="Select File"
+                                 property="binaryFileContent"
+                                 clearButtonVisible="true"
+                                 fileNameVisible="true"
+                                 dropAllowed="true"
+                                 maxFileSize="51200"
+                                 visible="false"
+                                 maxWidth="50%"
+                />
+            </formLayout>
+        </vbox>
+    </content>
+</fragment>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://manageMetadataView.title">
+    <data>
+
+        <keyValueCollection id="keyValueEntitiesDc">
+
+        </keyValueCollection>
+
+        <instance id="metadataDefinitionDc" class="com.company.dynamicds.dynamicds.entity.MetadataDefinition">
+            <loader id="metadataDefinitionDl"/>
+            <fetchPlan extends="_base"/>
+        </instance>
+        <collection id="metadataDefinitionsDc" class="com.company.dynamicds.dynamicds.entity.MetadataDefinition">
+            <loader id="metadataDefinitionsDl" readOnly="true">
+                <query>
+                    <![CDATA[select e from dwh_MetadataDefinition e]]>
+                </query>
+            </loader>
+            <fetchPlan extends="_base"/>
+        </collection>
+    </data>
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+    </facets>
+    <layout>
+
+        <hbox spacing="true">
+
+            <entityComboBox id="metadataCombobox" metaClass="dwh_MetadataDefinition"
+                            itemsContainer="metadataDefinitionsDc"/>
+
+            <button id="loadAllButton" text="Load All"/>
+        </hbox>
+        <dataGrid id="keyValueEntitiesDataGrid" dataContainer="keyValueEntitiesDc" minWidth="100px" width="100%">
+            <actions>
+                <action id="create" type="list_create"/>
+                <action id="edit" type="list_edit"/>
+                <action id="remove" type="list_remove"/>
+            </actions>
+
+        </dataGrid>
+    </layout>
+</view>

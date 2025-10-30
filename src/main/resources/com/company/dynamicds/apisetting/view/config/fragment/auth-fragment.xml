@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<fragment xmlns="http://jmix.io/schema/flowui/fragment">
+    <data>
+        <instance id="apiSettingDc"
+                  class="com.company.dynamicds.entity.ApiSetting" provided="true">
+            <fetchPlan extends="_base">
+                <property name="authorization" fetchPlan="_base">
+                </property>
+            </fetchPlan>
+            <instance id="authorizationDc" property="authorization" provided="true"/>
+
+        </instance>
+    </data>
+    <content>
+        <vbox id="root">
+            <split orientation="HORIZONTAL" width="100%" splitterPosition="25" height="100%">
+                <!-- Left: Auth Type Selection -->
+                <vbox padding="true" spacing="true">
+                    <comboBox id="apiAuthTypeField"
+                              dataContainer="apiSettingDc"
+                              property="authorization.authType"
+                              label="Auth Type" width="95%"/>
+                </vbox>
+                <formLayout dataContainer="authorizationDc" width="100%">
+                    <responsiveSteps>
+                        <responsiveStep minWidth="0" columns="1"/>
+                    </responsiveSteps>
+                    <!-- No Auth -->
+                    <vbox id="noAuth"
+                          visible="false"
+                          width="100%" padding="true" spacing="true" alignItems="CENTER">
+                        <h3 text="No Authentication"/>
+                        <span text="This request does not use any authorization."/>
+                    </vbox>
+
+                    <!-- Basic Auth -->
+                    <vbox id="basicAuthFields" visible="false" width="100%" padding="true" spacing="true">
+                        <h4 text="Basic Authentication"/>
+                        <textField id="usernameField"
+                                   property="username"
+                                   label="Tên người dùng"
+                                   width="100%"/>
+                        <passwordField id="passwordField"
+                                       property="password"
+                                       label="Mật khẩu"
+                                       width="100%"/>
+                    </vbox>
+
+                    <!-- Bearer Token -->
+                    <vbox id="bearerTokenFields" visible="false" width="100%" padding="true" spacing="true">
+                        <h4 text="Bearer Token"/>
+                        <textArea id="bearerTokenField"
+                                  property="bearerToken"
+                                  label="Mã thông báo"
+                                  width="100%"
+                                  helperText="Nhập mã thông báo Bearer của bạn"
+                                  height="200px"/>
+                    </vbox>
+
+                    <!-- API Key -->
+                    <vbox id="apiKeyFields" visible="false" width="100%" padding="true" spacing="true">
+                        <h4 text="API Key"/>
+                        <textField id="keyField"
+                                   property="apiKeyName"
+                                   label="Khoá"
+                                   width="100%"/>
+                        <passwordField id="valueField"
+                                       property="apiKeyValue"
+                                       label="Giá trị"
+                                       width="100%"/>
+                        <comboBox id="placementField"
+                                  property="apiKeyPlacement"
+                                  label="Thêm vào"
+                                  width="100%"/>
+                    </vbox>
+                </formLayout>
+            </split>
+        </vbox>
+    </content>
+</fragment>

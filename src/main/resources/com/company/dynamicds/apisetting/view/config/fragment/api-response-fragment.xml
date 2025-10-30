@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<fragment xmlns="http://jmix.io/schema/flowui/fragment">
+    <data>
+        <collection id="responseHeadersDc" class="com.company.dynamicds.dto.ResponseHeader">
+            <loader id="responseHeadersDl" readOnly="true"/>
+            <fetchPlan extends="_base"/>
+        </collection>
+
+    </data>
+    <content>
+        <vbox id="root" height="100%" width="100%">
+            <hbox width="100%" alignItems="CENTER" justifyContent="BETWEEN">
+                <hbox spacing="true" alignItems="START">
+                    <h4 text="Response"/>
+                </hbox>
+                <hbox id="statusBar"
+                      alignSelf="END">
+                    <span id="statusBadge"
+                          visible="false"
+                          themeNames="badge primary"/>
+                    <span id="timeLabel"
+                          visible="false" themeNames="badge normal"/>
+                    <span id="sizeLabel"
+                          visible="false" themeNames="badge normal"/>
+                </hbox>
+            </hbox>
+            <tabSheet id="responseTabs" width="100%" height="100%">
+                <tab id="bodyTab" label="Body">
+                    <codeEditor id="responseBody"
+                                readOnly="true" textWrap="true" width="100%" showPrintMargin="false" height="100%"/>
+                </tab>
+                <tab id="headerTab" label="Header">
+                    <dataGrid id="responseHeadersDataGrid"
+                              dataContainer="responseHeadersDc" height="100%"
+                              columnReorderingAllowed="true">
+                        <columns>
+                            <column property="key" resizable="true"/>
+                            <column property="value" resizable="true"/>
+                        </columns>
+                    </dataGrid>
+                </tab>
+
+            </tabSheet>
+        </vbox>
+    </content>
+</fragment>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<fragment xmlns="http://jmix.io/schema/flowui/fragment">
+    <data>
+        <instance id="apiSettingDc"
+                  class="com.company.dynamicds.entity.ApiSetting" provided="true">
+            <fetchPlan extends="_base">
+                <property fetchPlan="_base" name="apiHeader"/>
+            </fetchPlan>
+            <collection id="apiHeaderDc" property="apiHeader" provided="true"/>
+        </instance>
+    </data>
+    <content>
+        <vbox id="root">
+            <hbox id="buttonsPanel">
+                <button id="createButton" text="New" themeNames="primary"/>
+            </hbox>
+            <dataGrid id="apiHeadersDataGrid" dataContainer="apiHeaderDc"
+                      columnReorderingAllowed="true"
+                      width="100%">
+                <actions>
+                    <action id="create" type="list_create"/>
+                    <action id="edit" type="list_edit"/>
+                    <action id="remove" type="list_remove"/>
+                </actions>
+                <columns>
+                    <column property="key" editable="true"
+                            resizable="true"
+                            width="25%"/>
+                    <column property="value" editable="true"
+                            resizable="true"
+                            width="25%"/>
+                    <column property="description" editable="true"
+                            resizable="true"
+                            width="35%"/>
+                    <column key="actionColumn" header="msg://com.company.dynamicds.view.document/actionListHeader"
+                            resizable="true"
+                            width="15%"/>
+                </columns>
+            </dataGrid>
+        </vbox>
+    </content>
+</fragment>
