@@ -5,7 +5,7 @@
       focusComponent="apiSettingsDataGrid">
     <data>
         <collection id="apiSettingsDc"
-                    class="com.company.dynamicds.entity.ApiSetting">
+                    class="com.company.dynamicds.apisetting.entity.ApiSetting">
             <fetchPlan extends="_base"/>
             <loader id="apiSettingsDl" readOnly="true">
                 <query>

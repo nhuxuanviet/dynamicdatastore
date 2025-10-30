@@ -37,7 +37,7 @@ public final class DataGridRenderers {
                     case SETTING -> icon.setIcon(VaadinIcon.COG);
                     case DELETE -> icon.setIcon(VaadinIcon.TRASH);
                     case RELOAD -> icon.setIcon(VaadinIcon.REFRESH);
-                    case ACTIVE ->  icon.setIcon(VaadinIcon.CHECK);
+                    case ACTIVE -> icon.setIcon(VaadinIcon.CHECK);
                     case LOCK -> {
                         if (item instanceof User user) {
                             if (Boolean.TRUE.equals(user.getActive())) {

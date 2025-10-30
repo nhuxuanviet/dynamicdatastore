@@ -4,7 +4,7 @@
       focusComponent="form">
     <data>
         <instance id="apiSettingDc"
-                  class="com.company.dynamicds.entity.ApiSetting">
+                  class="com.company.dynamicds.apisetting.entity.ApiSetting">
             <fetchPlan extends="_base"/>
             <loader id="apiSettingDl"/>
         </instance>
