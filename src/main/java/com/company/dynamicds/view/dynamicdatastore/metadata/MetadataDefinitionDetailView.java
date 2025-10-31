@@ -13,10 +13,7 @@ import io.jmix.flowui.Notifications;
 import io.jmix.flowui.component.combobox.JmixComboBox;
 import io.jmix.flowui.component.grid.DataGrid;
 import io.jmix.flowui.kit.component.button.JmixButton;
-import io.jmix.flowui.model.CollectionContainer;
-import io.jmix.flowui.model.CollectionLoader;
-import io.jmix.flowui.model.CollectionPropertyContainer;
-import io.jmix.flowui.model.InstanceContainer;
+import io.jmix.flowui.model.*;
 import io.jmix.flowui.view.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -43,6 +40,8 @@ public class MetadataDefinitionDetailView extends StandardDetailView<MetadataDef
     private DataGrid<MetadataField> metadataFieldsDataGrid;
     @ViewComponent
     private CollectionPropertyContainer<MetadataField> metadataFieldsDc;
+    @ViewComponent
+    private DataContext dataContext;
 
     @Subscribe
     public void onInit(final InitEvent event) {
@@ -78,6 +77,10 @@ public class MetadataDefinitionDetailView extends StandardDetailView<MetadataDef
 
         try {
             MetadataDefinition updatedMetadata = dynamicDataStoreService.generateFromApi(metadata);
+            // Merge các MetadataField vào DataContext
+            for (MetadataField field : updatedMetadata.getMetadataFields()) {
+                dataContext.merge(field);
+            }
 
             getEditedEntityContainer().setItem(updatedMetadata);
             metadataFieldsDc.setItems(updatedMetadata.getMetadataFields());
@@ -96,6 +99,5 @@ public class MetadataDefinitionDetailView extends StandardDetailView<MetadataDef
     public void onMetadataDefinitionDcItemChange(final InstanceContainer.ItemChangeEvent<MetadataDefinition> event) {
 
     }
-
 
 }
