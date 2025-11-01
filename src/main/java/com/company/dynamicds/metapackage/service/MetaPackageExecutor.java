@@ -1,0 +1,325 @@
+package com.company.dynamicds.metapackage.service;
+
+import com.company.dynamicds.dynamicds.DynamicKeyValueRestInvoker;
+import com.company.dynamicds.dynamicds.entity.MetadataDefinition;
+import com.company.dynamicds.metapackage.entity.MetaPackage;
+import com.company.dynamicds.metapackage.entity.MetaPackageFieldMapping;
+import com.company.dynamicds.metapackage.entity.MetaPackageSource;
+import com.company.dynamicds.metapackage.enums.MergeStrategy;
+import io.jmix.core.DataManager;
+import io.jmix.core.FetchPlan;
+import io.jmix.core.FetchPlanRepository;
+import io.jmix.core.Sort;
+import io.jmix.core.entity.KeyValueEntity;
+import io.jmix.core.querycondition.Condition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+/**
+ * Executes meta package data aggregation from multiple metadata sources
+ * Similar to RestDataStore's data loading logic
+ */
+@Component
+public class MetaPackageExecutor {
+
+    private static final Logger log = LoggerFactory.getLogger(MetaPackageExecutor.class);
+
+    private final DynamicKeyValueRestInvoker restInvoker;
+    private final MetaPackageFilterProcessor filterProcessor;
+    private final DataManager dataManager;
+    private final FetchPlanRepository fetchPlanRepository;
+
+    public MetaPackageExecutor(DynamicKeyValueRestInvoker restInvoker,
+                                MetaPackageFilterProcessor filterProcessor,
+                                DataManager dataManager,
+                                FetchPlanRepository fetchPlanRepository) {
+        this.restInvoker = restInvoker;
+        this.filterProcessor = filterProcessor;
+        this.dataManager = dataManager;
+        this.fetchPlanRepository = fetchPlanRepository;
+    }
+
+    /**
+     * Execute meta package data loading with filtering, sorting, and pagination
+     * Similar to RestDataStore.loadAll()
+     */
+    public List<KeyValueEntity> executeLoad(MetaPackage metaPackage,
+                                             Condition condition,
+                                             Sort sort,
+                                             Integer firstResult,
+                                             Integer maxResults) {
+        log.info("Executing meta package: {} with merge strategy: {}",
+                metaPackage.getName(), metaPackage.getMergeStrategy());
+
+        // Load full MetaPackage with sources and mappings
+        MetaPackage fullPackage = loadFullMetaPackage(metaPackage.getId());
+
+        if (fullPackage.getSources() == null || fullPackage.getSources().isEmpty()) {
+            log.warn("MetaPackage {} has no sources", fullPackage.getName());
+            return Collections.emptyList();
+        }
+
+        // Sort sources by orderIndex
+        List<MetaPackageSource> sortedSources = fullPackage.getSources().stream()
+                .sorted(Comparator.comparing(MetaPackageSource::getOrderIndex))
+                .collect(Collectors.toList());
+
+        // Fetch data from all sources
+        Map<String, List<KeyValueEntity>> sourceDataMap = fetchAllSources(sortedSources);
+
+        // Merge data according to strategy
+        List<KeyValueEntity> mergedData = mergeData(sourceDataMap, sortedSources, fullPackage.getMergeStrategy());
+
+        // Apply filtering (PropertyCondition/LogicalCondition)
+        if (condition != null) {
+            mergedData = filterProcessor.applyFilter(mergedData, condition);
+        }
+
+        // Apply sorting
+        if (sort != null && !sort.getOrders().isEmpty()) {
+            mergedData = applySorting(mergedData, sort);
+        }
+
+        // Apply pagination
+        if (firstResult != null || maxResults != null) {
+            mergedData = applyPagination(mergedData, firstResult, maxResults);
+        }
+
+        log.info("Meta package {} returned {} records", fullPackage.getName(), mergedData.size());
+        return mergedData;
+    }
+
+    /**
+     * Load MetaPackage with all sources, mappings, and metadata definitions
+     */
+    private MetaPackage loadFullMetaPackage(UUID metaPackageId) {
+        FetchPlan fetchPlan = fetchPlanRepository.getFetchPlan(MetaPackage.class, "metaPackage-full");
+        if (fetchPlan == null) {
+            // Create inline fetch plan
+            fetchPlan = FetchPlan.builder(MetaPackage.class)
+                    .addFetchPlan(FetchPlan.BASE)
+                    .add("sources", builder -> builder
+                            .addFetchPlan(FetchPlan.BASE)
+                            .add("metadataDefinition", FetchPlan.BASE)
+                            .add("fieldMappings", FetchPlan.BASE))
+                    .build();
+        }
+
+        return dataManager.load(MetaPackage.class)
+                .id(metaPackageId)
+                .fetchPlan(fetchPlan)
+                .one();
+    }
+
+    /**
+     * Fetch data from all sources using DynamicKeyValueRestInvoker
+     */
+    private Map<String, List<KeyValueEntity>> fetchAllSources(List<MetaPackageSource> sources) {
+        Map<String, List<KeyValueEntity>> dataMap = new LinkedHashMap<>();
+
+        for (MetaPackageSource source : sources) {
+            try {
+                log.debug("Fetching data from source: {} ({})",
+                        source.getAlias(), source.getMetadataDefinition().getName());
+
+                List<KeyValueEntity> data = restInvoker.loadList(source.getMetadataDefinition());
+                dataMap.put(source.getAlias(), data);
+
+                log.debug("Source {} returned {} records", source.getAlias(), data.size());
+            } catch (Exception e) {
+                log.error("Failed to fetch data from source: {}", source.getAlias(), e);
+                dataMap.put(source.getAlias(), Collections.emptyList());
+            }
+        }
+
+        return dataMap;
+    }
+
+    /**
+     * Merge data from multiple sources according to merge strategy
+     */
+    private List<KeyValueEntity> mergeData(Map<String, List<KeyValueEntity>> sourceDataMap,
+                                            List<MetaPackageSource> sources,
+                                            MergeStrategy strategy) {
+        return switch (strategy) {
+            case SEQUENTIAL -> mergeSequential(sourceDataMap, sources);
+            case CROSS_JOIN -> mergeCrossJoin(sourceDataMap, sources);
+            case NESTED -> mergeNested(sourceDataMap, sources);
+        };
+    }
+
+    /**
+     * SEQUENTIAL: Append all records from all sources
+     */
+    private List<KeyValueEntity> mergeSequential(Map<String, List<KeyValueEntity>> sourceDataMap,
+                                                  List<MetaPackageSource> sources) {
+        List<KeyValueEntity> result = new ArrayList<>();
+
+        for (MetaPackageSource source : sources) {
+            List<KeyValueEntity> sourceData = sourceDataMap.get(source.getAlias());
+            if (sourceData == null || sourceData.isEmpty()) {
+                continue;
+            }
+
+            for (KeyValueEntity entity : sourceData) {
+                KeyValueEntity mappedEntity = new KeyValueEntity();
+                applyFieldMappings(entity, mappedEntity, source);
+                result.add(mappedEntity);
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * CROSS_JOIN: Cartesian product of all sources
+     */
+    private List<KeyValueEntity> mergeCrossJoin(Map<String, List<KeyValueEntity>> sourceDataMap,
+                                                 List<MetaPackageSource> sources) {
+        List<KeyValueEntity> result = new ArrayList<>();
+
+        // Start with first source
+        if (sources.isEmpty()) {
+            return result;
+        }
+
+        List<KeyValueEntity> firstSourceData = sourceDataMap.get(sources.get(0).getAlias());
+        if (firstSourceData == null || firstSourceData.isEmpty()) {
+            return result;
+        }
+
+        // Initialize with first source
+        for (KeyValueEntity entity : firstSourceData) {
+            KeyValueEntity mappedEntity = new KeyValueEntity();
+            applyFieldMappings(entity, mappedEntity, sources.get(0));
+            result.add(mappedEntity);
+        }
+
+        // Cross join with remaining sources
+        for (int i = 1; i < sources.size(); i++) {
+            MetaPackageSource source = sources.get(i);
+            List<KeyValueEntity> sourceData = sourceDataMap.get(source.getAlias());
+
+            if (sourceData == null || sourceData.isEmpty()) {
+                continue;
+            }
+
+            List<KeyValueEntity> newResult = new ArrayList<>();
+
+            for (KeyValueEntity existingEntity : result) {
+                for (KeyValueEntity newEntity : sourceData) {
+                    KeyValueEntity combined = copyEntity(existingEntity);
+                    applyFieldMappings(newEntity, combined, source);
+                    newResult.add(combined);
+                }
+            }
+
+            result = newResult;
+        }
+
+        return result;
+    }
+
+    /**
+     * NESTED: For each record from first source, include all related records from other sources
+     */
+    private List<KeyValueEntity> mergeNested(Map<String, List<KeyValueEntity>> sourceDataMap,
+                                              List<MetaPackageSource> sources) {
+        // For now, similar to SEQUENTIAL
+        // TODO: Implement proper nested logic with join keys
+        return mergeSequential(sourceDataMap, sources);
+    }
+
+    /**
+     * Apply field mappings from source entity to target entity
+     */
+    private void applyFieldMappings(KeyValueEntity sourceEntity,
+                                     KeyValueEntity targetEntity,
+                                     MetaPackageSource source) {
+        if (source.getFieldMappings() == null || source.getFieldMappings().isEmpty()) {
+            return;
+        }
+
+        for (MetaPackageFieldMapping mapping : source.getFieldMappings()) {
+            Object value = sourceEntity.getValue(mapping.getSourceFieldName());
+
+            // TODO: Apply transform script if present
+            if (mapping.getTransformScript() != null && !mapping.getTransformScript().isBlank()) {
+                // Use ScriptService for transformation
+                // For now, just use raw value
+            }
+
+            targetEntity.setValue(mapping.getTargetFieldName(), value);
+        }
+    }
+
+    /**
+     * Copy KeyValueEntity
+     */
+    private KeyValueEntity copyEntity(KeyValueEntity source) {
+        KeyValueEntity copy = new KeyValueEntity();
+        for (String property : source.getProperties()) {
+            copy.setValue(property, source.getValue(property));
+        }
+        return copy;
+    }
+
+    /**
+     * Apply sorting to entities
+     */
+    private List<KeyValueEntity> applySorting(List<KeyValueEntity> entities, Sort sort) {
+        List<KeyValueEntity> sorted = new ArrayList<>(entities);
+
+        sorted.sort((e1, e2) -> {
+            for (Sort.Order order : sort.getOrders()) {
+                Object v1 = e1.getValue(order.getProperty());
+                Object v2 = e2.getValue(order.getProperty());
+
+                int cmp = compareValues(v1, v2);
+                if (cmp != 0) {
+                    return order.getDirection() == Sort.Direction.ASC ? cmp : -cmp;
+                }
+            }
+            return 0;
+        });
+
+        return sorted;
+    }
+
+    @SuppressWarnings("unchecked")
+    private int compareValues(Object v1, Object v2) {
+        if (v1 == null && v2 == null) return 0;
+        if (v1 == null) return -1;
+        if (v2 == null) return 1;
+
+        if (v1 instanceof Comparable && v2 instanceof Comparable) {
+            try {
+                return ((Comparable<Object>) v1).compareTo(v2);
+            } catch (ClassCastException e) {
+                return 0;
+            }
+        }
+
+        return v1.toString().compareTo(v2.toString());
+    }
+
+    /**
+     * Apply pagination
+     */
+    private List<KeyValueEntity> applyPagination(List<KeyValueEntity> entities,
+                                                  Integer firstResult,
+                                                  Integer maxResults) {
+        int start = firstResult != null ? firstResult : 0;
+        int end = maxResults != null ? Math.min(start + maxResults, entities.size()) : entities.size();
+
+        if (start >= entities.size()) {
+            return Collections.emptyList();
+        }
+
+        return entities.subList(start, end);
+    }
+}
