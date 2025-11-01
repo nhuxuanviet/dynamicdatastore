@@ -7,7 +7,13 @@
 
     <!-- MetaPackage Tables -->
 
-    <changeSet id="1" author="system">
+    <changeSet id="1" author="DynamicDataStore">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="DWH_META_PACKAGE"/>
+            </not>
+        </preConditions>
+
         <createTable tableName="DWH_META_PACKAGE">
             <column name="ID" type="${uuid.type}">
                 <constraints primaryKey="true" nullable="false"/>
@@ -40,7 +46,13 @@
         </createIndex>
     </changeSet>
 
-    <changeSet id="2" author="system">
+    <changeSet id="2" author="DynamicDataStore">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="DWH_META_PACKAGE_SOURCE"/>
+            </not>
+        </preConditions>
+
         <createTable tableName="DWH_META_PACKAGE_SOURCE">
             <column name="ID" type="${uuid.type}">
                 <constraints primaryKey="true" nullable="false"/>
@@ -68,6 +80,14 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
+    </changeSet>
+
+    <changeSet id="3" author="DynamicDataStore">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="FK_META_PKG_SRC_ON_META_PACKAGE"/>
+            </not>
+        </preConditions>
 
         <addForeignKeyConstraint
                 baseTableName="DWH_META_PACKAGE_SOURCE"
@@ -76,6 +96,14 @@
                 referencedTableName="DWH_META_PACKAGE"
                 referencedColumnNames="ID"
                 onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="4" author="DynamicDataStore">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="FK_META_PKG_SRC_ON_METADATA_DEF"/>
+            </not>
+        </preConditions>
 
         <addForeignKeyConstraint
                 baseTableName="DWH_META_PACKAGE_SOURCE"
@@ -83,6 +111,14 @@
                 constraintName="FK_META_PKG_SRC_ON_METADATA_DEF"
                 referencedTableName="DWH_METADATA_DEFINITION"
                 referencedColumnNames="ID"/>
+    </changeSet>
+
+    <changeSet id="5" author="DynamicDataStore">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists tableName="DWH_META_PACKAGE_SOURCE" indexName="IDX_META_PKG_SRC_ALIAS"/>
+            </not>
+        </preConditions>
 
         <createIndex tableName="DWH_META_PACKAGE_SOURCE" indexName="IDX_META_PKG_SRC_ALIAS" unique="true">
             <column name="META_PACKAGE_ID"/>
@@ -90,7 +126,13 @@
         </createIndex>
     </changeSet>
 
-    <changeSet id="3" author="system">
+    <changeSet id="6" author="DynamicDataStore">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="DWH_META_PACKAGE_FIELD_MAPPING"/>
+            </not>
+        </preConditions>
+
         <createTable tableName="DWH_META_PACKAGE_FIELD_MAPPING">
             <column name="ID" type="${uuid.type}">
                 <constraints primaryKey="true" nullable="false"/>
@@ -120,6 +162,14 @@
             <column name="TRANSFORM_SCRIPT" type="CLOB"/>
             <column name="IS_REQUIRED" type="BOOLEAN" defaultValueBoolean="false"/>
         </createTable>
+    </changeSet>
+
+    <changeSet id="7" author="DynamicDataStore">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="FK_META_PKG_FLD_ON_META_PKG_SRC"/>
+            </not>
+        </preConditions>
 
         <addForeignKeyConstraint
                 baseTableName="DWH_META_PACKAGE_FIELD_MAPPING"
@@ -128,6 +178,14 @@
                 referencedTableName="DWH_META_PACKAGE_SOURCE"
                 referencedColumnNames="ID"
                 onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="8" author="DynamicDataStore">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists tableName="DWH_META_PACKAGE_FIELD_MAPPING" indexName="IDX_META_PKG_FLD_TARGET"/>
+            </not>
+        </preConditions>
 
         <createIndex tableName="DWH_META_PACKAGE_FIELD_MAPPING" indexName="IDX_META_PKG_FLD_TARGET" unique="true">
             <column name="META_PACKAGE_SOURCE_ID"/>
