@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://metaPackageSourceDetailView.title"
+      focusComponent="form">
+    <data>
+        <instance id="metaPackageSourceDc"
+                  class="com.company.dynamicds.metapackage.entity.MetaPackageSource">
+            <fetchPlan extends="_base">
+                <property name="metadataDefinition" fetchPlan="_base"/>
+                <property name="fieldMappings" fetchPlan="_base"/>
+            </fetchPlan>
+            <loader/>
+        </instance>
+
+        <collection id="fieldMappingsDc" class="com.company.dynamicds.metapackage.entity.MetaPackageFieldMapping">
+            <fetchPlan extends="_base"/>
+            <loader readOnly="true">
+                <query>
+                    <![CDATA[select e from MetaPackageFieldMapping e where e.metaPackageSource = :container_metaPackageSourceDc]]>
+                </query>
+            </loader>
+        </collection>
+    </data>
+
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+    </facets>
+
+    <actions>
+        <action id="saveAction" type="detail_saveClose"/>
+        <action id="closeAction" type="detail_close"/>
+    </actions>
+
+    <layout>
+        <formLayout id="form" dataContainer="metaPackageSourceDc">
+            <textField id="aliasField" property="alias" required="true"/>
+            <entityPicker id="metadataDefinitionField" property="metadataDefinition">
+                <actions>
+                    <action id="entityLookup" type="entity_lookup"/>
+                    <action id="entityClear" type="entity_clear"/>
+                </actions>
+            </entityPicker>
+            <textField id="orderIndexField" property="orderIndex" required="true"/>
+        </formLayout>
+
+        <hbox id="detailActions">
+            <button id="saveAndCloseBtn" action="saveAction"/>
+            <button id="closeBtn" action="closeAction"/>
+        </hbox>
+
+        <h4 text="msg://metaPackageSourceDetailView.fieldMappings"/>
+
+        <dataGrid id="fieldMappingsDataGrid"
+                  dataContainer="fieldMappingsDc"
+                  width="100%"
+                  minHeight="20em">
+            <actions>
+                <action id="create" type="list_create"/>
+                <action id="edit" type="list_edit"/>
+                <action id="remove" type="list_remove"/>
+            </actions>
+            <columns>
+                <column property="sourceFieldName"/>
+                <column property="targetFieldName"/>
+                <column property="dataType"/>
+                <column property="isRequired"/>
+            </columns>
+            <buttonsPanel>
+                <button id="createBtn" action="fieldMappingsDataGrid.create"/>
+                <button id="editBtn" action="fieldMappingsDataGrid.edit"/>
+                <button id="removeBtn" action="fieldMappingsDataGrid.remove"/>
+            </buttonsPanel>
+        </dataGrid>
+    </layout>
+</view>
