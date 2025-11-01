@@ -1,7 +1,6 @@
 package com.company.dynamicds.metapackage.service;
 
 import com.company.dynamicds.dynamicds.DynamicKeyValueRestInvoker;
-import com.company.dynamicds.dynamicds.entity.MetadataDefinition;
 import com.company.dynamicds.metapackage.entity.MetaPackage;
 import com.company.dynamicds.metapackage.entity.MetaPackageFieldMapping;
 import com.company.dynamicds.metapackage.entity.MetaPackageSource;
@@ -12,16 +11,18 @@ import io.jmix.core.FetchPlanRepository;
 import io.jmix.core.Sort;
 import io.jmix.core.entity.KeyValueEntity;
 import io.jmix.core.querycondition.Condition;
+import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 /**
  * Executes meta package data aggregation from multiple metadata sources
- * Similar to RestDataStore's data loading logic
+ * Supports parallel/async fetching for improved performance
  */
 @Component
 public class MetaPackageExecutor {
@@ -33,6 +34,9 @@ public class MetaPackageExecutor {
     private final DataManager dataManager;
     private final FetchPlanRepository fetchPlanRepository;
 
+    // Thread pool for async fetching
+    private final ExecutorService executorService;
+
     public MetaPackageExecutor(DynamicKeyValueRestInvoker restInvoker,
                                 MetaPackageFilterProcessor filterProcessor,
                                 DataManager dataManager,
@@ -41,17 +45,45 @@ public class MetaPackageExecutor {
         this.filterProcessor = filterProcessor;
         this.dataManager = dataManager;
         this.fetchPlanRepository = fetchPlanRepository;
+
+        // Create thread pool with size based on available processors
+        int threadPoolSize = Math.max(4, Runtime.getRuntime().availableProcessors());
+        this.executorService = Executors.newFixedThreadPool(
+            threadPoolSize,
+            r -> {
+                Thread t = new Thread(r);
+                t.setName("MetaPackage-Fetcher-" + t.getId());
+                t.setDaemon(true);
+                return t;
+            }
+        );
+        log.info("MetaPackageExecutor initialized with thread pool size: {}", threadPoolSize);
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        log.info("Shutting down MetaPackageExecutor thread pool...");
+        executorService.shutdown();
+        try {
+            if (!executorService.awaitTermination(30, TimeUnit.SECONDS)) {
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 
     /**
      * Execute meta package data loading with filtering, sorting, and pagination
-     * Similar to RestDataStore.loadAll()
+     * Fetches from multiple sources in parallel for better performance
      */
     public List<KeyValueEntity> executeLoad(MetaPackage metaPackage,
                                              Condition condition,
                                              Sort sort,
                                              Integer firstResult,
                                              Integer maxResults) {
+        long startTime = System.currentTimeMillis();
         log.info("Executing meta package: {} with merge strategy: {}",
                 metaPackage.getName(), metaPackage.getMergeStrategy());
 
@@ -68,8 +100,8 @@ public class MetaPackageExecutor {
                 .sorted(Comparator.comparing(MetaPackageSource::getOrderIndex))
                 .collect(Collectors.toList());
 
-        // Fetch data from all sources
-        Map<String, List<KeyValueEntity>> sourceDataMap = fetchAllSources(sortedSources);
+        // Fetch data from all sources ASYNC (parallel)
+        Map<String, List<KeyValueEntity>> sourceDataMap = fetchAllSourcesAsync(sortedSources);
 
         // Merge data according to strategy
         List<KeyValueEntity> mergedData = mergeData(sourceDataMap, sortedSources, fullPackage.getMergeStrategy());
@@ -89,7 +121,9 @@ public class MetaPackageExecutor {
             mergedData = applyPagination(mergedData, firstResult, maxResults);
         }
 
-        log.info("Meta package {} returned {} records", fullPackage.getName(), mergedData.size());
+        long duration = System.currentTimeMillis() - startTime;
+        log.info("Meta package {} returned {} records in {}ms",
+                fullPackage.getName(), mergedData.size(), duration);
         return mergedData;
     }
 
@@ -104,7 +138,9 @@ public class MetaPackageExecutor {
                     .addFetchPlan(FetchPlan.BASE)
                     .add("sources", builder -> builder
                             .addFetchPlan(FetchPlan.BASE)
-                            .add("metadataDefinition", FetchPlan.BASE)
+                            .add("metadataDefinition", metadataBuilder -> metadataBuilder
+                                    .addFetchPlan(FetchPlan.BASE)
+                                    .add("metadataFields", FetchPlan.BASE))
                             .add("fieldMappings", FetchPlan.BASE))
                     .build();
         }
@@ -116,27 +152,73 @@ public class MetaPackageExecutor {
     }
 
     /**
-     * Fetch data from all sources using DynamicKeyValueRestInvoker
+     * Fetch data from all sources using CompletableFuture for parallel execution
+     * IMPROVED PERFORMANCE: All API calls run concurrently
      */
-    private Map<String, List<KeyValueEntity>> fetchAllSources(List<MetaPackageSource> sources) {
-        Map<String, List<KeyValueEntity>> dataMap = new LinkedHashMap<>();
+    private Map<String, List<KeyValueEntity>> fetchAllSourcesAsync(List<MetaPackageSource> sources) {
+        log.debug("Starting async fetch for {} sources", sources.size());
 
-        for (MetaPackageSource source : sources) {
-            try {
-                log.debug("Fetching data from source: {} ({})",
-                        source.getAlias(), source.getMetadataDefinition().getName());
+        // Create CompletableFuture for each source
+        List<CompletableFuture<Map.Entry<String, List<KeyValueEntity>>>> futures = sources.stream()
+                .map(source -> CompletableFuture.supplyAsync(() -> {
+                    try {
+                        log.debug("Fetching data from source: {} ({})",
+                                source.getAlias(), source.getMetadataDefinition().getName());
 
-                List<KeyValueEntity> data = restInvoker.loadList(source.getMetadataDefinition());
-                dataMap.put(source.getAlias(), data);
+                        long sourceStart = System.currentTimeMillis();
+                        List<KeyValueEntity> data = restInvoker.loadList(source.getMetadataDefinition());
+                        long sourceDuration = System.currentTimeMillis() - sourceStart;
 
-                log.debug("Source {} returned {} records", source.getAlias(), data.size());
-            } catch (Exception e) {
-                log.error("Failed to fetch data from source: {}", source.getAlias(), e);
-                dataMap.put(source.getAlias(), Collections.emptyList());
+                        log.debug("Source {} returned {} records in {}ms",
+                                source.getAlias(), data.size(), sourceDuration);
+
+                        return Map.entry(source.getAlias(), data);
+
+                    } catch (Exception e) {
+                        log.error("Failed to fetch data from source: {}", source.getAlias(), e);
+                        return Map.entry(source.getAlias(), Collections.<KeyValueEntity>emptyList());
+                    }
+                }, executorService))
+                .collect(Collectors.toList());
+
+        // Wait for all futures to complete and collect results
+        try {
+            CompletableFuture<Void> allFutures = CompletableFuture.allOf(
+                    futures.toArray(new CompletableFuture[0])
+            );
+
+            // Wait with timeout (30 seconds)
+            allFutures.get(30, TimeUnit.SECONDS);
+
+            // Collect results in order
+            Map<String, List<KeyValueEntity>> dataMap = new LinkedHashMap<>();
+            for (CompletableFuture<Map.Entry<String, List<KeyValueEntity>>> future : futures) {
+                Map.Entry<String, List<KeyValueEntity>> entry = future.get();
+                dataMap.put(entry.getKey(), entry.getValue());
             }
-        }
 
-        return dataMap;
+            return dataMap;
+
+        } catch (TimeoutException e) {
+            log.error("Timeout waiting for source data fetching", e);
+            // Return partial results
+            Map<String, List<KeyValueEntity>> dataMap = new LinkedHashMap<>();
+            for (CompletableFuture<Map.Entry<String, List<KeyValueEntity>>> future : futures) {
+                if (future.isDone() && !future.isCompletedExceptionally()) {
+                    try {
+                        Map.Entry<String, List<KeyValueEntity>> entry = future.get();
+                        dataMap.put(entry.getKey(), entry.getValue());
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
+            return dataMap;
+
+        } catch (Exception e) {
+            log.error("Error during async fetching", e);
+            // Fallback to empty map
+            return new LinkedHashMap<>();
+        }
     }
 
     /**
@@ -166,7 +248,7 @@ public class MetaPackageExecutor {
             }
 
             for (KeyValueEntity entity : sourceData) {
-                KeyValueEntity mappedEntity = new KeyValueEntity();
+                KeyValueEntity mappedEntity = dataManager.create(KeyValueEntity.class);
                 applyFieldMappings(entity, mappedEntity, source);
                 result.add(mappedEntity);
             }
@@ -194,7 +276,7 @@ public class MetaPackageExecutor {
 
         // Initialize with first source
         for (KeyValueEntity entity : firstSourceData) {
-            KeyValueEntity mappedEntity = new KeyValueEntity();
+            KeyValueEntity mappedEntity = dataManager.create(KeyValueEntity.class);
             applyFieldMappings(entity, mappedEntity, sources.get(0));
             result.add(mappedEntity);
         }
@@ -261,7 +343,7 @@ public class MetaPackageExecutor {
      * Copy KeyValueEntity
      */
     private KeyValueEntity copyEntity(KeyValueEntity source) {
-        KeyValueEntity copy = new KeyValueEntity();
+        KeyValueEntity copy = dataManager.create(KeyValueEntity.class);
         for (String property : source.getProperties()) {
             copy.setValue(property, source.getValue(property));
         }

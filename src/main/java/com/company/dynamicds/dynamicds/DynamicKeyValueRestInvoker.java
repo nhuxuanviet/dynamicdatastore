@@ -34,6 +34,13 @@ public class DynamicKeyValueRestInvoker {
         MetadataDefinition metadata = metadataDefinitionRepository.findByNameAndStoreName(entityName, dataStoreName)
                 .orElseThrow(() -> new IllegalStateException("No metadata found for " + dataStoreName + "/" + entityName));
 
+        return loadList(metadata);
+    }
+
+    /**
+     * Load list of entities from API using MetadataDefinition
+     */
+    public List<KeyValueEntity> loadList(MetadataDefinition metadata) throws RuntimeException {
         ApiSetting apiSetting = convertMetadataToApiSetting(metadata);
         ApiResponse response = apiExecutorService.sendRequest(apiSetting);
 

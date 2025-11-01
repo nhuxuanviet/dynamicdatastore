@@ -58,17 +58,7 @@
                 <column property="name"/>
                 <column property="storeName"/>
                 <column property="mergeStrategy"/>
-                <column property="isActive">
-                    <renderer>
-                        <![CDATA[
-                            if (item.isActive) {
-                                return '<vaadin-icon icon="vaadin:check" style="color: green;"></vaadin-icon> Active';
-                            } else {
-                                return '<vaadin-icon icon="vaadin:ban" style="color: red;"></vaadin-icon> Inactive';
-                            }
-                        ]]>
-                    </renderer>
-                </column>
+                <column property="isActive"/>
                 <column property="description"/>
             </columns>
         </dataGrid>
