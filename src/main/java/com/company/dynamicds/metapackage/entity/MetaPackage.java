@@ -1,8 +1,8 @@
 package com.company.dynamicds.metapackage.entity;
 
-import com.company.dynamicds.entity.BaseEntity;
 import com.company.dynamicds.metapackage.enums.MergeStrategy;
 import io.jmix.core.DeletePolicy;
+import io.jmix.core.entity.annotation.JmixGeneratedValue;
 import io.jmix.core.entity.annotation.OnDeleteInverse;
 import io.jmix.core.metamodel.annotation.Composition;
 import io.jmix.core.metamodel.annotation.JmixEntity;
@@ -10,6 +10,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Meta Package - Aggregates data from multiple metadata sources
@@ -20,7 +21,11 @@ import java.util.List;
         @Index(name = "IDX_META_PACKAGE_STORE_NAME", columnList = "STORE_NAME", unique = true)
 })
 @Entity
-public class MetaPackage extends BaseEntity {
+public class MetaPackage {
+    @JmixGeneratedValue
+    @Column(name = "ID", nullable = false)
+    @Id
+    private UUID id;
 
     @NotNull
     @Column(name = "NAME", nullable = false)
@@ -92,5 +97,13 @@ public class MetaPackage extends BaseEntity {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
     }
 }

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1" author="DynamicDataStore">
+        <createTable tableName="DWH_META_PACKAGE">
+            <column name="ID" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="PK_DWH_META_PACKAGE"/>
+            </column>
+            <column name="NAME" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="DESCRIPTION" type="CLOB"/>
+            <column name="STORE_NAME" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="MERGE_STRATEGY" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="IS_ACTIVE" type="BOOLEAN"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="2" author="DynamicDataStore">
+        <createTable tableName="DWH_META_PACKAGE_FIELD_MAPPING">
+            <column name="ID" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="PK_DWH_META_PACKAGE_FIELD_MAPPING"/>
+            </column>
+            <column name="META_PACKAGE_SOURCE_ID" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="SOURCE_FIELD_NAME" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="TARGET_FIELD_NAME" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="DATA_TYPE" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="TRANSFORM_SCRIPT" type="CLOB"/>
+            <column name="IS_REQUIRED" type="BOOLEAN"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="3" author="DynamicDataStore">
+        <createTable tableName="DWH_META_PACKAGE_SOURCE">
+            <column name="ID" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="PK_DWH_META_PACKAGE_SOURCE"/>
+            </column>
+            <column name="META_PACKAGE_ID" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ALIAS" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="METADATA_DEFINITION_ID" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ORDER_INDEX" type="INT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="4" author="DynamicDataStore">
+        <createIndex indexName="IDX_META_PACKAGE_STORE_NAME" tableName="DWH_META_PACKAGE" unique="true">
+            <column name="STORE_NAME"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="5" author="DynamicDataStore">
+        <createIndex indexName="IDX_META_PKG_FLD_TARGET" tableName="DWH_META_PACKAGE_FIELD_MAPPING" unique="true">
+            <column name="META_PACKAGE_SOURCE_ID"/>
+            <column name="TARGET_FIELD_NAME"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="6" author="DynamicDataStore">
+        <createIndex indexName="IDX_META_PKG_SRC_ALIAS" tableName="DWH_META_PACKAGE_SOURCE" unique="true">
+            <column name="META_PACKAGE_ID"/>
+            <column name="ALIAS"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="7" author="DynamicDataStore">
+        <addForeignKeyConstraint baseColumnNames="META_PACKAGE_SOURCE_ID" baseTableName="DWH_META_PACKAGE_FIELD_MAPPING"
+                                 constraintName="FK_DWH_META_PACKAGE_FIELD_MAPPING_ON_META_PACKAGE_SOURCE"
+                                 referencedColumnNames="ID" referencedTableName="DWH_META_PACKAGE_SOURCE"/>
+    </changeSet>
+    <changeSet id="8" author="DynamicDataStore">
+        <addForeignKeyConstraint baseColumnNames="METADATA_DEFINITION_ID" baseTableName="DWH_META_PACKAGE_SOURCE"
+                                 constraintName="FK_DWH_META_PACKAGE_SOURCE_ON_METADATA_DEFINITION"
+                                 referencedColumnNames="ID" referencedTableName="DWH_METADATA_DEFINITION"/>
+    </changeSet>
+    <changeSet id="9" author="DynamicDataStore">
+        <addForeignKeyConstraint baseColumnNames="META_PACKAGE_ID" baseTableName="DWH_META_PACKAGE_SOURCE"
+                                 constraintName="FK_DWH_META_PACKAGE_SOURCE_ON_META_PACKAGE" referencedColumnNames="ID"
+                                 referencedTableName="DWH_META_PACKAGE"/>
+    </changeSet>
+</databaseChangeLog>

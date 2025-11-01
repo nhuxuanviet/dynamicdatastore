@@ -35,7 +35,7 @@
             <button id="createButton" action="metaPackagesDataGrid.createAction"/>
             <button id="editButton" action="metaPackagesDataGrid.editAction"/>
             <button id="removeButton" action="metaPackagesDataGrid.removeAction"/>
-            <separator/>
+            <hr/>
             <button id="activateButton" action="metaPackagesDataGrid.activate" text="Activate" icon="CHECK"/>
             <button id="deactivateButton" action="metaPackagesDataGrid.deactivate" text="Deactivate" icon="BAN"/>
             <button id="reloadButton" action="metaPackagesDataGrid.reload" text="Reload" icon="REFRESH"/>

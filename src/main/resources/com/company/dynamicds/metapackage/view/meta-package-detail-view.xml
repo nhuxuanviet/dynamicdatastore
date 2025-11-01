@@ -1,17 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <view xmlns="http://jmix.io/schema/flowui/view"
-      title="Meta Package Configuration"
+      title="msg://metaPackageDetailView.title"
       focusComponent="form">
     <data>
-        <instance id="metaPackageDc" class="com.company.dynamicds.metapackage.entity.MetaPackage">
+        <instance id="metaPackageDc"
+                  class="com.company.dynamicds.metapackage.entity.MetaPackage">
+            <fetchPlan extends="_base"/>
             <loader id="metaPackageDl"/>
-            <fetchPlan extends="_base">
-                <property name="sources" fetchPlan="_base">
-                    <property name="metadataDefinition" fetchPlan="_base"/>
-                    <property name="fieldMappings" fetchPlan="_base"/>
-                </property>
-            </fetchPlan>
-            <collection id="sourcesDc" property="sources"/>
         </instance>
     </data>
     <facets>
@@ -27,73 +22,12 @@
                 <responsiveStep minWidth="0" columns="1"/>
                 <responsiveStep minWidth="40em" columns="2"/>
             </responsiveSteps>
-            <textField id="nameField" property="name" required="true"/>
-            <textField id="storeNameField" property="storeName" required="true"
-                       helperText="Unique store name (e.g., 'customerOrdersStore')"/>
-            <select id="mergeStrategyField" property="mergeStrategy" required="true"/>
-            <checkbox id="isActiveField" property="isActive" enabled="false"
-                      helperText="Use Activate/Deactivate buttons in list view"/>
-            <textArea id="descriptionField" property="description" colspan="2" height="6em"/>
+            <textField id="nameField" property="name"/>
+            <textArea id="descriptionField" height="9.5em" property="description"/>
+            <textField id="storeNameField" property="storeName"/>
+            <select id="mergeStrategyField" property="mergeStrategy"/>
+            <checkbox id="isActiveField" property="isActive"/>
         </formLayout>
-
-        <h3>Data Sources</h3>
-        <hbox width="100%">
-            <button action="sourcesDataGrid.create"/>
-            <button action="sourcesDataGrid.edit"/>
-            <button action="sourcesDataGrid.remove"/>
-        </hbox>
-        <dataGrid id="sourcesDataGrid"
-                  dataContainer="sourcesDc"
-                  width="100%"
-                  minHeight="15em"
-                  columnReorderingAllowed="true">
-            <actions>
-                <action id="create" type="list_create"/>
-                <action id="edit" type="list_edit"/>
-                <action id="remove" type="list_remove"/>
-            </actions>
-            <columns resizable="true">
-                <column property="alias" editable="true"/>
-                <column property="metadataDefinition"/>
-                <column property="orderIndex" editable="true"/>
-            </columns>
-        </dataGrid>
-
-        <h3>Field Mappings</h3>
-        <html content="Select a source above to configure its field mappings"/>
-        <details opened="true">
-            <summary>Field Mappings for Selected Source</summary>
-            <instanceContainer id="selectedSourceDc"
-                             class="com.company.dynamicds.metapackage.entity.MetaPackageSource"
-                             provider="sourcesDc">
-                <collection id="fieldMappingsDc" property="fieldMappings"/>
-            </instanceContainer>
-
-            <hbox width="100%">
-                <button action="fieldMappingsDataGrid.create"/>
-                <button action="fieldMappingsDataGrid.edit"/>
-                <button action="fieldMappingsDataGrid.remove"/>
-            </hbox>
-            <dataGrid id="fieldMappingsDataGrid"
-                      dataContainer="fieldMappingsDc"
-                      width="100%"
-                      minHeight="15em"
-                      columnReorderingAllowed="true">
-                <actions>
-                    <action id="create" type="list_create"/>
-                    <action id="edit" type="list_edit"/>
-                    <action id="remove" type="list_remove"/>
-                </actions>
-                <columns resizable="true">
-                    <column property="sourceFieldName" editable="true"/>
-                    <column property="targetFieldName" editable="true"/>
-                    <column property="dataType" editable="true"/>
-                    <column property="isRequired" editable="true"/>
-                    <column property="transformScript"/>
-                </columns>
-            </dataGrid>
-        </details>
-
         <hbox id="detailActions">
             <button id="saveAndCloseButton" action="saveAction"/>
             <button id="closeButton" action="closeAction"/>

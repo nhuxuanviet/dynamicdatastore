@@ -3,6 +3,7 @@ package com.company.dynamicds.metapackage.entity;
 import com.company.dynamicds.dynamicds.entity.MetadataDefinition;
 import com.company.dynamicds.entity.BaseEntity;
 import io.jmix.core.DeletePolicy;
+import io.jmix.core.entity.annotation.JmixGeneratedValue;
 import io.jmix.core.entity.annotation.OnDeleteInverse;
 import io.jmix.core.metamodel.annotation.Composition;
 import io.jmix.core.metamodel.annotation.JmixEntity;
@@ -10,6 +11,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Represents a data source (MetadataDefinition) within a MetaPackage
@@ -20,7 +22,11 @@ import java.util.List;
         @Index(name = "IDX_META_PKG_SRC_ALIAS", columnList = "META_PACKAGE_ID, ALIAS", unique = true)
 })
 @Entity
-public class MetaPackageSource extends BaseEntity {
+public class MetaPackageSource {
+    @JmixGeneratedValue
+    @Column(name = "ID", nullable = false)
+    @Id
+    private UUID id;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -83,5 +89,13 @@ public class MetaPackageSource extends BaseEntity {
 
     public void setMetaPackage(MetaPackage metaPackage) {
         this.metaPackage = metaPackage;
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
     }
 }

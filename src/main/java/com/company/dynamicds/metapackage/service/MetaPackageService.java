@@ -5,6 +5,7 @@ import com.company.dynamicds.metapackage.entity.MetaPackage;
 import io.jmix.core.DataManager;
 import io.jmix.core.FetchPlan;
 import io.jmix.core.FetchPlanRepository;
+import io.jmix.core.FetchPlans;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -25,13 +26,15 @@ public class MetaPackageService {
     private final DataManager dataManager;
     private final MetaPackageDataStoreRegister storeRegister;
     private final FetchPlanRepository fetchPlanRepository;
+    private final FetchPlans fetchPlans;
 
     public MetaPackageService(DataManager dataManager,
                               MetaPackageDataStoreRegister storeRegister,
-                              FetchPlanRepository fetchPlanRepository) {
+                              FetchPlanRepository fetchPlanRepository, FetchPlans fetchPlans) {
         this.dataManager = dataManager;
         this.storeRegister = storeRegister;
         this.fetchPlanRepository = fetchPlanRepository;
+        this.fetchPlans = fetchPlans;
     }
 
     /**
@@ -175,14 +178,14 @@ public class MetaPackageService {
      * Create full fetch plan for MetaPackage
      */
     private FetchPlan createFullFetchPlan() {
-        return fetchPlanRepository.builder(MetaPackage.class)
-                .addFetchPlan(FetchPlan.BASE)
-                .add("sources", builder -> builder
-                        .addFetchPlan(FetchPlan.BASE)
-                        .add("metadataDefinition", metadataBuilder -> metadataBuilder
-                                .addFetchPlan(FetchPlan.BASE)
-                                .add("metadataFields", FetchPlan.BASE))
-                        .add("fieldMappings", FetchPlan.BASE))
+        return fetchPlans.builder(MetaPackage.class)
+                .addFetchPlan(FetchPlan.BASE)               // _base của MetaPackage
+                .add("sources", b -> b
+                        .addFetchPlan(FetchPlan.BASE)       // _base của MetaPackageSource
+                        .add("metadataDefinition", b2 -> b2
+                                .addFetchPlan(FetchPlan.BASE)   // _base của MetadataDefinition
+                                .add("metadataFields", FetchPlan.BASE)) // _base của MetadataField
+                        .add("fieldMappings", FetchPlan.BASE)) // _base của FieldMapping
                 .build();
     }
 }

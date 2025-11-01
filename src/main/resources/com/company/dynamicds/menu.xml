@@ -3,9 +3,11 @@
 
     <menu id="application" title="msg://com.company.dynamicds/menu.application.title" opened="true">
         <item view="User.list" title="msg://com.company.dynamicds.view.user/UserListView.title"/>
-        <item view="dwh_DynamicDataStore.list" title="msg://com.company.dynamicds.view.dynamicdatastore/dynamicDataStoreListView.title"/>
-        <item view="dwh_MetadataDefinition.list" title="msg://com.company.dynamicds.view.dynamicdatastore.metadata/metadataDefinitionListView.title"/>
-        <item view="dwh_ManageMetadataView" title="msg://com.company.dynamicds.view.dynamicdatastore.metadata/manageMetadataView.title"/>
+        <item view="dwh_DynamicDataStore.list" title="msg://com.company.dynamicds.dynamicds.view/dynamicDataStoreListView.title"/>
+        <item view="dwh_MetadataDefinition.list" title="msg://com.company.dynamicds.dynamicds.view.metadata/metadataDefinitionListView.title"/>
+        <item view="dwh_ManageMetadataView" title="msg://com.company.dynamicds.dynamicds.view.metadata/manageMetadataView.title"/>
+        <item view="dwh_MetaPackage.list" title="msg://com.company.dynamicds.view.metapackage/MetaPackageListView.title" />
+<!--        <item view="dwh_MetaPackage.detail" title="msg://com.company.dynamicds.metapackage.entity/MetaPackage" />-->
     </menu>
     <menu opened="true" id="data_sharing" title="msg://com.company.dynamicds/menu_config.data-sharing.title" icon="vaadin:share">
         <item view="dwh_ApiSetting.list" title="msg://com.company.dynamicds.apisetting.view/apiSettingListView.title" icon="vaadin:share"/>

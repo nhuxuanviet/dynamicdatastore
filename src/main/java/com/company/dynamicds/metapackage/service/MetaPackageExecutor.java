@@ -5,11 +5,9 @@ import com.company.dynamicds.metapackage.entity.MetaPackage;
 import com.company.dynamicds.metapackage.entity.MetaPackageFieldMapping;
 import com.company.dynamicds.metapackage.entity.MetaPackageSource;
 import com.company.dynamicds.metapackage.enums.MergeStrategy;
-import io.jmix.core.DataManager;
-import io.jmix.core.FetchPlan;
-import io.jmix.core.FetchPlanRepository;
-import io.jmix.core.Sort;
+import io.jmix.core.*;
 import io.jmix.core.entity.KeyValueEntity;
+import io.jmix.core.metamodel.model.MetaProperty;
 import io.jmix.core.querycondition.Condition;
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
@@ -33,18 +31,20 @@ public class MetaPackageExecutor {
     private final MetaPackageFilterProcessor filterProcessor;
     private final DataManager dataManager;
     private final FetchPlanRepository fetchPlanRepository;
+    private final FetchPlans fetchPlans;
 
     // Thread pool for async fetching
     private final ExecutorService executorService;
 
     public MetaPackageExecutor(DynamicKeyValueRestInvoker restInvoker,
-                                MetaPackageFilterProcessor filterProcessor,
-                                DataManager dataManager,
-                                FetchPlanRepository fetchPlanRepository) {
+                               MetaPackageFilterProcessor filterProcessor,
+                               DataManager dataManager,
+                               FetchPlanRepository fetchPlanRepository, FetchPlans fetchPlans) {
         this.restInvoker = restInvoker;
         this.filterProcessor = filterProcessor;
         this.dataManager = dataManager;
         this.fetchPlanRepository = fetchPlanRepository;
+        this.fetchPlans = fetchPlans;
 
         // Create thread pool with size based on available processors
         int threadPoolSize = Math.max(4, Runtime.getRuntime().availableProcessors());
@@ -130,15 +130,23 @@ public class MetaPackageExecutor {
     /**
      * Load MetaPackage with all sources, mappings, and metadata definitions
      */
+    /** Load MetaPackage với đầy đủ graph (sources, mappings, metadata definitions) */
     private MetaPackage loadFullMetaPackage(UUID metaPackageId) {
-        FetchPlan fetchPlan = fetchPlanRepository.getFetchPlan(MetaPackage.class, "metaPackage-full");
+        // 1) Thử lấy fetch plan đặt tên nếu bạn đã khai báo trong XML: "metaPackage-full"
+        FetchPlan fetchPlan = null;
+        try {
+            fetchPlan = fetchPlanRepository.getFetchPlan(MetaPackage.class, "metaPackage-full");
+        } catch (Exception ignored) {
+            // không sao, sẽ fallback qua builder
+        }
+
+        // 2) Nếu chưa có, tự build bằng FetchPlans (Jmix 2.6)
         if (fetchPlan == null) {
-            // Create inline fetch plan using fetchPlanRepository
-            fetchPlan = fetchPlanRepository.builder(MetaPackage.class)
+            fetchPlan = fetchPlans.builder(MetaPackage.class)
                     .addFetchPlan(FetchPlan.BASE)
-                    .add("sources", builder -> builder
+                    .add("sources", b -> b
                             .addFetchPlan(FetchPlan.BASE)
-                            .add("metadataDefinition", metadataBuilder -> metadataBuilder
+                            .add("metadataDefinition", b2 -> b2
                                     .addFetchPlan(FetchPlan.BASE)
                                     .add("metadataFields", FetchPlan.BASE))
                             .add("fieldMappings", FetchPlan.BASE))
@@ -344,15 +352,35 @@ public class MetaPackageExecutor {
      */
     private KeyValueEntity copyEntity(KeyValueEntity source) {
         KeyValueEntity copy = dataManager.create(KeyValueEntity.class);
-        // Copy all properties from source to copy
-        // Note: KeyValueEntity doesn't expose getProperties() in Jmix 2.6
-        // We need to track properties differently or iterate through known fields
-        // For now, use reflection or just copy the values we know about
+
         if (source.getInstanceMetaClass() != null) {
-            for (var property : source.getInstanceMetaClass().getProperties()) {
-                String propertyName = property.getName();
-                if (source.hasValue(propertyName)) {
-                    copy.setValue(propertyName, source.getValue(propertyName));
+            // Phải set metaClass trước khi setValue
+            copy.setInstanceMetaClass(source.getInstanceMetaClass());
+
+            for (MetaProperty property : source.getInstanceMetaClass().getProperties()) {
+                String name = property.getName();
+
+                // Lấy giá trị; không dùng hasValue vì Jmix 2.6 không có
+                Object value;
+                try {
+                    // Cách 1: gọi trực tiếp
+                    value = source.getValue(name);
+
+                    // Cách 2 (tuỳ chọn): dùng EntityValues
+                    // value = EntityValues.getValue(source, name);
+
+                } catch (IllegalArgumentException ex) {
+                    // Phòng trường hợp property không tồn tại trong instance map
+                    continue;
+                }
+
+                // Nếu muốn copy cả null thì bỏ if này
+                if (value != null) {
+                    // Cách 1:
+                    copy.setValue(name, value);
+
+                    // Cách 2 (tuỳ chọn):
+                    // EntityValues.setValue(copy, name, value);
                 }
             }
         }

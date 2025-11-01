@@ -1,4 +1,4 @@
-package com.company.dynamicds.view.dynamicdatastore;
+package com.company.dynamicds.dynamicds.view;
 
 import com.company.dynamicds.dynamicds.entity.DynamicDataStoreConfig;
 import com.company.dynamicds.view.main.MainView;

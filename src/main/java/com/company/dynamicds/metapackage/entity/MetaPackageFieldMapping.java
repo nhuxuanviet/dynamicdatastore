@@ -1,10 +1,12 @@
 package com.company.dynamicds.metapackage.entity;
 
-import com.company.dynamicds.entity.BaseEntity;
-import com.company.dynamicds.enums.MetadataFieldType;
+import com.company.dynamicds.dynamicds.entity.MetadataFieldType;
+import io.jmix.core.entity.annotation.JmixGeneratedValue;
 import io.jmix.core.metamodel.annotation.JmixEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+
+import java.util.UUID;
 
 /**
  * Field mapping from source metadata to target meta package
@@ -15,7 +17,12 @@ import jakarta.validation.constraints.NotNull;
         @Index(name = "IDX_META_PKG_FLD_TARGET", columnList = "META_PACKAGE_SOURCE_ID, TARGET_FIELD_NAME", unique = true)
 })
 @Entity
-public class MetaPackageFieldMapping extends BaseEntity {
+public class MetaPackageFieldMapping{
+
+    @JmixGeneratedValue
+    @Column(name = "ID", nullable = false)
+    @Id
+    private UUID id;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -87,5 +94,13 @@ public class MetaPackageFieldMapping extends BaseEntity {
 
     public void setMetaPackageSource(MetaPackageSource metaPackageSource) {
         this.metaPackageSource = metaPackageSource;
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
     }
 }
