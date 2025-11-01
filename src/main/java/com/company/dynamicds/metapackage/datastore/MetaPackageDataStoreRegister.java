@@ -3,7 +3,6 @@ package com.company.dynamicds.metapackage.datastore;
 import com.company.dynamicds.metapackage.entity.MetaPackage;
 import com.company.dynamicds.metapackage.service.MetaPackageExecutor;
 import io.jmix.core.Metadata;
-import io.jmix.core.MetadataTools;
 import io.jmix.core.Stores;
 import io.jmix.core.impl.MetadataImpl;
 import io.jmix.core.impl.StoreDescriptorsRegistry;
@@ -13,7 +12,6 @@ import io.jmix.core.metamodel.model.StoreDescriptor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -32,10 +30,8 @@ public class MetaPackageDataStoreRegister {
     private final StoreDescriptorsRegistry storeDescriptorsRegistry;
     private final Stores stores;
     private final Metadata metadata;
-    private final MetadataTools metadataTools;
     private final MetaPackageExecutor executor;
     private final MetaPackageMetaClassFactory metaClassFactory;
-    private final ApplicationEventPublisher eventPublisher;
 
     private final Map<String, MetaPackageDataStore> registeredStores = new ConcurrentHashMap<>();
 
@@ -44,19 +40,15 @@ public class MetaPackageDataStoreRegister {
                                          StoreDescriptorsRegistry storeDescriptorsRegistry,
                                          Stores stores,
                                          Metadata metadata,
-                                         MetadataTools metadataTools,
                                          MetaPackageExecutor executor,
-                                         MetaPackageMetaClassFactory metaClassFactory,
-                                         ApplicationEventPublisher eventPublisher) {
+                                         MetaPackageMetaClassFactory metaClassFactory) {
         this.beanFactory = beanFactory;
         this.applicationContext = applicationContext;
         this.storeDescriptorsRegistry = storeDescriptorsRegistry;
         this.stores = stores;
         this.metadata = metadata;
-        this.metadataTools = metadataTools;
         this.executor = executor;
         this.metaClassFactory = metaClassFactory;
-        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -77,10 +69,7 @@ public class MetaPackageDataStoreRegister {
             MetaPackageDataStore dataStore = new MetaPackageDataStore(
                     storeName,
                     metaPackage,
-                    executor,
-                    metadata,
-                    metadataTools,
-                    eventPublisher
+                    executor
             );
 
             String storeBeanName = "metaPackageDataStore_" + storeName;
@@ -110,14 +99,13 @@ public class MetaPackageDataStoreRegister {
             getStoresMap().put(storeName, jmixStore);
 
             // 6. Create dynamic MetaClass and register with metadata
-            MetaClass metaClass = metaClassFactory.createMetaClass(metaPackage);
+            MetaClass metaClass = metaClassFactory.createMetaClass(metaPackage, storeName);
             registerMetaClass(metaClass, storeName);
 
             // 7. Save to internal registry
             registeredStores.put(storeName, dataStore);
 
-            log.info("✓ Successfully registered MetaPackage store: {} with {} properties",
-                    storeName, metaClass.getProperties().size());
+            log.info("✓ Successfully registered MetaPackage store: {}", storeName);
 
         } catch (Exception e) {
             log.error("Failed to register MetaPackage: {}", storeName, e);
@@ -149,11 +137,8 @@ public class MetaPackageDataStoreRegister {
             // 4. Unregister MetaClass from metadata
             unregisterMetaClass(storeName);
 
-            // 5. Destroy Spring bean
-            String storeBeanName = "metaPackageDataStore_" + storeName;
-            if (beanFactory.containsSingleton(storeBeanName)) {
-                beanFactory.destroySingleton(storeBeanName);
-            }
+            // 5. Note: Spring bean cleanup not needed for singleton registry
+            // ConfigurableListableBeanFactory doesn't provide destroySingleton in Jmix 2.6
 
             log.info("✓ Successfully unregistered MetaPackage store: {}", storeName);
 

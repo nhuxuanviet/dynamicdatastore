@@ -133,8 +133,8 @@ public class MetaPackageExecutor {
     private MetaPackage loadFullMetaPackage(UUID metaPackageId) {
         FetchPlan fetchPlan = fetchPlanRepository.getFetchPlan(MetaPackage.class, "metaPackage-full");
         if (fetchPlan == null) {
-            // Create inline fetch plan
-            fetchPlan = FetchPlan.builder(MetaPackage.class)
+            // Create inline fetch plan using fetchPlanRepository
+            fetchPlan = fetchPlanRepository.builder(MetaPackage.class)
                     .addFetchPlan(FetchPlan.BASE)
                     .add("sources", builder -> builder
                             .addFetchPlan(FetchPlan.BASE)
@@ -344,8 +344,17 @@ public class MetaPackageExecutor {
      */
     private KeyValueEntity copyEntity(KeyValueEntity source) {
         KeyValueEntity copy = dataManager.create(KeyValueEntity.class);
-        for (String property : source.getProperties()) {
-            copy.setValue(property, source.getValue(property));
+        // Copy all properties from source to copy
+        // Note: KeyValueEntity doesn't expose getProperties() in Jmix 2.6
+        // We need to track properties differently or iterate through known fields
+        // For now, use reflection or just copy the values we know about
+        if (source.getInstanceMetaClass() != null) {
+            for (var property : source.getInstanceMetaClass().getProperties()) {
+                String propertyName = property.getName();
+                if (source.hasValue(propertyName)) {
+                    copy.setValue(propertyName, source.getValue(propertyName));
+                }
+            }
         }
         return copy;
     }

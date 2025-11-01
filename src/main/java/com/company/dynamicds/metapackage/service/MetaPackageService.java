@@ -175,7 +175,7 @@ public class MetaPackageService {
      * Create full fetch plan for MetaPackage
      */
     private FetchPlan createFullFetchPlan() {
-        return FetchPlan.builder(MetaPackage.class)
+        return fetchPlanRepository.builder(MetaPackage.class)
                 .addFetchPlan(FetchPlan.BASE)
                 .add("sources", builder -> builder
                         .addFetchPlan(FetchPlan.BASE)

@@ -4,21 +4,18 @@ import com.company.dynamicds.metapackage.entity.MetaPackage;
 import com.company.dynamicds.metapackage.service.MetaPackageExecutor;
 import io.jmix.core.*;
 import io.jmix.core.datastore.AbstractDataStore;
-import io.jmix.core.datastore.DataStoreAfterEntityLoadEvent;
-import io.jmix.core.datastore.DataStoreBeforeEntityCountEvent;
 import io.jmix.core.entity.KeyValueEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationEventPublisher;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
 /**
  * DataStore implementation for MetaPackage
- * Similar to DynamicDataStore and RestDataStore
- * Handles LoadContext with filtering, sorting, and pagination
+ * Similar to DynamicDataStore - handles LoadContext with filtering, sorting, and pagination
  */
 public class MetaPackageDataStore extends AbstractDataStore {
 
@@ -26,17 +23,14 @@ public class MetaPackageDataStore extends AbstractDataStore {
 
     private final MetaPackage metaPackage;
     private final MetaPackageExecutor executor;
-    private final ApplicationEventPublisher eventPublisher;
+    private String storeName;
 
     public MetaPackageDataStore(String storeName,
                                  MetaPackage metaPackage,
-                                 MetaPackageExecutor executor,
-                                 Metadata metadata,
-                                 MetadataTools metadataTools,
-                                 ApplicationEventPublisher eventPublisher) {
+                                 MetaPackageExecutor executor) {
+        this.storeName = storeName;
         this.metaPackage = metaPackage;
         this.executor = executor;
-        this.eventPublisher = eventPublisher;
 
         log.info("MetaPackageDataStore created for: {} (store: {})",
                 metaPackage.getName(), storeName);
@@ -44,12 +38,22 @@ public class MetaPackageDataStore extends AbstractDataStore {
 
     @Override
     public String getName() {
-        return metaPackage.getStoreName();
+        return storeName;
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public <E> List<E> loadAll(LoadContext<E> context) {
+    public void setName(String name) {
+        this.storeName = name;
+    }
+
+    @Override
+    protected Object loadOne(LoadContext<?> context) {
+        List<Object> list = loadAll(context);
+        return list.isEmpty() ? null : list.get(0);
+    }
+
+    @Override
+    protected List<Object> loadAll(LoadContext<?> context) {
         log.debug("loadAll called for MetaPackage: {}", metaPackage.getName());
 
         if (context.getQuery() == null) {
@@ -69,26 +73,18 @@ public class MetaPackageDataStore extends AbstractDataStore {
                 query.getMaxResults()       // Pagination limit
         );
 
-        // Publish after load event (for Jmix framework integration)
-        if (!result.isEmpty()) {
-            eventPublisher.publishEvent(new DataStoreAfterEntityLoadEvent(this, result));
-        }
-
-        return (List<E>) result;
+        return new ArrayList<>(result);
     }
 
     @Override
-    public <E> long getCount(LoadContext<E> context) {
-        log.debug("getCount called for MetaPackage: {}", metaPackage.getName());
-
-        // Publish before count event
-        eventPublisher.publishEvent(new DataStoreBeforeEntityCountEvent(this, context));
+    protected long countAll(LoadContext<?> context) {
+        log.debug("countAll called for MetaPackage: {}", metaPackage.getName());
 
         if (context.getQuery() == null) {
             return 0;
         }
 
-        // Load all and count (not optimized, but works for now)
+        // Load all and count (not optimized, but works)
         LoadContext.Query query = context.getQuery();
 
         List<KeyValueEntity> result = executor.executeLoad(
@@ -103,29 +99,18 @@ public class MetaPackageDataStore extends AbstractDataStore {
     }
 
     @Override
-    public <E> E save(E entity, SaveContext context) {
+    protected Set<Object> saveAll(SaveContext context) {
         throw new UnsupportedOperationException("MetaPackageDataStore is read-only");
     }
 
     @Override
-    public void save(SaveContext context) {
+    protected Set<Object> deleteAll(SaveContext context) {
         throw new UnsupportedOperationException("MetaPackageDataStore is read-only");
     }
 
     @Override
-    public Set<Object> save(Set<Object> entities) {
-        throw new UnsupportedOperationException("MetaPackageDataStore is read-only");
-    }
-
-    @Override
-    public <E> E load(LoadContext<E> context) {
-        List<E> list = loadAll(context);
-        return list.isEmpty() ? null : list.get(0);
-    }
-
-    @Override
-    public List<KeyValueEntity> loadValues(ValueLoadContext context) {
-        log.debug("loadValues called for MetaPackage: {}", metaPackage.getName());
+    protected List<Object> loadAllValues(ValueLoadContext context) {
+        log.debug("loadAllValues called for MetaPackage: {}", metaPackage.getName());
 
         // Similar to loadAll but for KeyValueEntity
         List<KeyValueEntity> result = executor.executeLoad(
@@ -136,16 +121,12 @@ public class MetaPackageDataStore extends AbstractDataStore {
                 context.getQuery() != null ? context.getQuery().getMaxResults() : null
         );
 
-        if (!result.isEmpty()) {
-            eventPublisher.publishEvent(new DataStoreAfterEntityLoadEvent(this, result));
-        }
-
-        return result;
+        return new ArrayList<>(result);
     }
 
     @Override
-    public long getCount(ValueLoadContext context) {
-        log.debug("getCount (values) called for MetaPackage: {}", metaPackage.getName());
+    protected long countAllValues(ValueLoadContext context) {
+        log.debug("countAllValues called for MetaPackage: {}", metaPackage.getName());
 
         if (context.getQuery() == null) {
             return 0;
@@ -160,5 +141,30 @@ public class MetaPackageDataStore extends AbstractDataStore {
         );
 
         return result.size();
+    }
+
+    @Override
+    protected Object beginLoadTransaction(boolean joinTransaction) {
+        return null; // Read-only, no transaction needed
+    }
+
+    @Override
+    protected Object beginSaveTransaction(boolean joinTransaction) {
+        return null; // Read-only, no transaction needed
+    }
+
+    @Override
+    protected void commitTransaction(Object transaction) {
+        // No-op
+    }
+
+    @Override
+    protected void rollbackTransaction(Object transaction) {
+        // No-op
+    }
+
+    @Override
+    protected TransactionContextState getTransactionContextState(boolean isJoinTransaction) {
+        return null; // Read-only, no transaction context
     }
 }

@@ -4,10 +4,9 @@ import com.company.dynamicds.dynamicds.DynamicMetaClass;
 import com.company.dynamicds.metapackage.entity.MetaPackage;
 import com.company.dynamicds.metapackage.entity.MetaPackageFieldMapping;
 import com.company.dynamicds.metapackage.entity.MetaPackageSource;
-import io.jmix.core.metamodel.datatype.Datatype;
-import io.jmix.core.metamodel.datatype.DatatypeRegistry;
+import io.jmix.core.Stores;
+import io.jmix.core.impl.keyvalue.KeyValueMetaClassFactory;
 import io.jmix.core.metamodel.model.MetaClass;
-import io.jmix.core.metamodel.model.MetaProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -24,35 +23,40 @@ public class MetaPackageMetaClassFactory {
 
     private static final Logger log = LoggerFactory.getLogger(MetaPackageMetaClassFactory.class);
 
-    private final DatatypeRegistry datatypeRegistry;
+    private final KeyValueMetaClassFactory keyValueMetaClassFactory;
+    private final Stores stores;
 
-    public MetaPackageMetaClassFactory(DatatypeRegistry datatypeRegistry) {
-        this.datatypeRegistry = datatypeRegistry;
+    public MetaPackageMetaClassFactory(KeyValueMetaClassFactory keyValueMetaClassFactory,
+                                        Stores stores) {
+        this.keyValueMetaClassFactory = keyValueMetaClassFactory;
+        this.stores = stores;
     }
 
     /**
      * Create MetaClass from MetaPackage field mappings
      */
-    public MetaClass createMetaClass(MetaPackage metaPackage) {
+    public MetaClass createMetaClass(MetaPackage metaPackage, String storeName) {
         String entityName = metaPackage.getStoreName();
         log.info("Creating MetaClass for MetaPackage: {} (entity: {})",
                 metaPackage.getName(), entityName);
 
-        DynamicMetaClass metaClass = new DynamicMetaClass(entityName);
+        // Create DynamicMetaClass using proper Jmix 2.6 pattern
+        DynamicMetaClass metaClass = new DynamicMetaClass();
+        metaClass.setName(entityName);
+        metaClass.setStore(stores.get(storeName));
+
+        // Use KeyValueMetaClassFactory.Configurer to add properties
+        KeyValueMetaClassFactory.Configurer configurer =
+                keyValueMetaClassFactory.configurer(metaClass);
 
         // Collect all field mappings from all sources
         List<MetaPackageFieldMapping> allMappings = collectAllMappings(metaPackage);
 
-        // Create MetaProperty for each field mapping
+        // Add property for each field mapping
         for (MetaPackageFieldMapping mapping : allMappings) {
             try {
                 Class<?> javaClass = mapping.getDataType().getJavaClass();
-                Datatype<?> datatype = datatypeRegistry.get(javaClass);
-
-                MetaProperty property = metaClass.createPropertyFromDatatype(
-                        mapping.getTargetFieldName(),
-                        datatype
-                );
+                configurer.addProperty(mapping.getTargetFieldName(), javaClass);
 
                 log.debug("Added property: {} (type: {})",
                         mapping.getTargetFieldName(), javaClass.getSimpleName());
@@ -62,7 +66,7 @@ public class MetaPackageMetaClassFactory {
             }
         }
 
-        log.info("MetaClass created with {} properties", metaClass.getProperties().size());
+        log.info("MetaClass created with {} properties", allMappings.size());
         return metaClass;
     }
 
