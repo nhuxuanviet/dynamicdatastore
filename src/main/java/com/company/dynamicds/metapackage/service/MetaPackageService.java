@@ -113,7 +113,7 @@ public class MetaPackageService {
         log.info("Initializing active MetaPackages...");
 
         List<MetaPackage> activePackages = dataManager.load(MetaPackage.class)
-                .query("select e from MetaPackage e where e.isActive = true")
+                .query("select e from dwh_MetaPackage e where e.isActive = true")
                 .fetchPlan(createFullFetchPlan())
                 .list();
 

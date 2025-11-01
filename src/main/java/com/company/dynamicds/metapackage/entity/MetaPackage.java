@@ -20,7 +20,7 @@ import java.util.UUID;
 @Table(name = "DWH_META_PACKAGE", indexes = {
         @Index(name = "IDX_META_PACKAGE_STORE_NAME", columnList = "STORE_NAME", unique = true)
 })
-@Entity
+@Entity(name = "dwh_MetaPackage")
 public class MetaPackage {
     @JmixGeneratedValue
     @Column(name = "ID", nullable = false)
