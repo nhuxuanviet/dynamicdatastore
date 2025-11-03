@@ -56,10 +56,18 @@ public class MetaPackageDataStoreRegister {
      */
     public synchronized void registerMetaPackage(MetaPackage metaPackage) {
         String storeName = metaPackage.getStoreName();
+        String storeBeanName = "metaPackageDataStore_" + storeName;
 
+        // Check if already registered in our internal registry
         if (registeredStores.containsKey(storeName)) {
-            log.warn("MetaPackage store '{}' is already registered. Skipping.", storeName);
+            log.warn("MetaPackage store '{}' is already registered in internal registry. Skipping.", storeName);
             return;
+        }
+
+        // Check if bean already exists in Spring (from previous failed registration)
+        if (beanFactory.containsSingleton(storeBeanName)) {
+            log.warn("Spring bean '{}' already exists. Cleaning up before re-registration.", storeBeanName);
+            cleanupPartialRegistration(storeName, storeBeanName);
         }
 
         log.info("Registering MetaPackage: {} (store: {})", metaPackage.getName(), storeName);
@@ -71,8 +79,6 @@ public class MetaPackageDataStoreRegister {
                     metaPackage,
                     executor
             );
-
-            String storeBeanName = "metaPackageDataStore_" + storeName;
 
             // 2. Register as Spring bean
             beanFactory.registerSingleton(storeBeanName, dataStore);
@@ -116,7 +122,47 @@ public class MetaPackageDataStoreRegister {
 
         } catch (Exception e) {
             log.error("Failed to register MetaPackage: {}", storeName, e);
+            // Cleanup on failure
+            cleanupPartialRegistration(storeName, storeBeanName);
             throw new RuntimeException("Failed to register MetaPackage: " + storeName, e);
+        }
+    }
+
+    /**
+     * Cleanup partial/failed registration
+     */
+    private void cleanupPartialRegistration(String storeName, String storeBeanName) {
+        log.info("Cleaning up partial registration for store: {}", storeName);
+
+        try {
+            // Remove from internal registry
+            registeredStores.remove(storeName);
+
+            // Remove from Jmix stores
+            getStoresMap().remove(storeName);
+
+            // Remove descriptor
+            getDescriptorMap().remove(storeName);
+
+            // Unregister MetaClass
+            unregisterMetaClass(storeName);
+
+            // Try to remove Spring bean singleton (best effort)
+            // Note: DefaultSingletonBeanRegistry doesn't expose destroySingleton in Spring 6.x
+            // but we can try to access it via reflection
+            try {
+                var method = beanFactory.getClass().getMethod("destroySingleton", String.class);
+                method.invoke(beanFactory, storeBeanName);
+                log.debug("Destroyed Spring singleton bean: {}", storeBeanName);
+            } catch (Exception ignored) {
+                // If destruction fails, just log and continue
+                log.debug("Could not destroy Spring singleton bean (may not exist): {}", storeBeanName);
+            }
+
+            log.info("✓ Cleanup completed for store: {}", storeName);
+
+        } catch (Exception e) {
+            log.error("Error during cleanup for store: {}", storeName, e);
         }
     }
 
