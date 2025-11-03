@@ -9,6 +9,7 @@ import com.company.dynamicds.view.main.MainView;
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 import io.jmix.core.DataManager;
 import io.jmix.flowui.Notifications;
@@ -42,8 +43,6 @@ public class MetaPackageDetailView extends StandardDetailView<MetaPackage> {
     private CollectionLoader<DynamicDataStoreConfig> dynamicDataStoreConfigsDl;
     @ViewComponent
     private DataGrid<MetaPackageFieldMapping> fieldMappingsDataGrid;
-    @ViewComponent
-    private JmixComboBox<String> storeNameField;
 
     @ViewComponent
     private CollectionContainer<DynamicDataStoreConfig> dynamicDataStoreConfigsDc;
@@ -57,10 +56,6 @@ public class MetaPackageDetailView extends StandardDetailView<MetaPackage> {
     @Subscribe
     public void onInit(final InitEvent event) {
         dynamicDataStoreConfigsDl.load();
-        List<String> storeNames = dynamicDataStoreConfigsDc.getItems().stream()
-                .map(DynamicDataStoreConfig::getStoreName)
-                .toList();
-        storeNameField.setItems(storeNames);
         // Setup inline editors for data grids
         GridEditorUtils.setupInlineEditor(sourcesDataGrid);
         GridEditorUtils.setupInlineEditor(fieldMappingsDataGrid);
