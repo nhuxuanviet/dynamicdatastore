@@ -6,12 +6,16 @@ import com.company.dynamicds.metapackage.entity.MetaPackageFieldMapping;
 import com.company.dynamicds.metapackage.entity.MetaPackageSource;
 import com.company.dynamicds.utils.ui.GridEditorUtils;
 import com.company.dynamicds.view.main.MainView;
+import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.router.Route;
 import io.jmix.core.DataManager;
 import io.jmix.flowui.Notifications;
 import io.jmix.flowui.component.combobox.JmixComboBox;
 import io.jmix.flowui.component.grid.DataGrid;
+import io.jmix.flowui.kit.action.ActionPerformedEvent;
+import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.model.CollectionContainer;
 import io.jmix.flowui.model.CollectionLoader;
 import io.jmix.flowui.model.CollectionPropertyContainer;
@@ -44,13 +48,11 @@ public class MetaPackageDetailView extends StandardDetailView<MetaPackage> {
     @ViewComponent
     private CollectionContainer<DynamicDataStoreConfig> dynamicDataStoreConfigsDc;
     @ViewComponent
-    private CollectionPropertyContainer<MetaPackageFieldMapping> fieldMappingsDc;
+    private CollectionContainer<MetaPackageFieldMapping> fieldMappingsDc;
     @ViewComponent
     private DataContext dataContext;
     @Autowired
     private DataManager dataManager;
-    @Autowired
-    private Notifications notifications;
 
     @Subscribe
     public void onInit(final InitEvent event) {
@@ -64,49 +66,37 @@ public class MetaPackageDetailView extends StandardDetailView<MetaPackage> {
         GridEditorUtils.setupInlineEditor(fieldMappingsDataGrid);
     }
 
-    @Install(to = "sourcesDataGrid.create", subject = "initializer")
-    private void sourcesCreateInitializer(com.company.dynamicds.metapackage.entity.MetaPackageSource e) {
-        e.setMetaPackage(getEditedEntity()); // gán cha, tránh may-not-be-null
-    }
+    @Autowired
+    private Notifications notifications;
 
-    @Subscribe("fieldMappingsDataGrid.create")
-    public void onFieldMappingsDataGridCreate(final io.jmix.flowui.action.list.CreateAction.ActionPerformedEvent event) {
-        // Prevent default behavior (opening detail view)
-        event.preventDefault();
-
-        // Get selected source
+    @Subscribe("createInlineBtn")
+    public void onCreateInlineBtnClick(final ClickEvent<JmixButton> event) {
         MetaPackageSource selectedSource = sourcesDataGrid.getSingleSelectedItem();
         if (selectedSource == null) {
-            notifications.create("Vui lòng chọn một Data Source trước khi tạo Field Mapping")
+            notifications.create("Hãy chọn một Source trước khi thêm mapping.")
                     .withType(Notifications.Type.WARNING)
                     .show();
-            return; // Cannot create field mapping without a source
+            return;
         }
 
-        // Create new MetaPackageFieldMapping
-        MetaPackageFieldMapping newMapping = dataManager.create(MetaPackageFieldMapping.class);
-        newMapping.setMetaPackageSource(selectedSource);
+        MetaPackageFieldMapping e = dataManager.create(MetaPackageFieldMapping.class);
+        e.setMetaPackageSource(selectedSource);
 
-        // Merge into data context
-        MetaPackageFieldMapping mergedMapping = dataContext.merge(newMapping);
+        e = dataContext.merge(e);
+        fieldMappingsDc.getMutableItems().add(e);
 
-        // Add to collection
-        fieldMappingsDc.getMutableItems().add(mergedMapping);
-
-        // Start editing the new row
-        fieldMappingsDataGrid.getEditor().editItem(mergedMapping);
+        fieldMappingsDataGrid.getEditor().editItem(e);
     }
 
-    @Subscribe("fieldMappingsDataGrid.edit")
-    public void onFieldMappingsDataGridEdit(final io.jmix.flowui.action.list.EditAction.ActionPerformedEvent event) {
-        // Prevent default behavior (opening detail view)
-        event.preventDefault();
-
-        // Get selected item and start inline editing
-        MetaPackageFieldMapping selectedMapping = fieldMappingsDataGrid.getSingleSelectedItem();
-        if (selectedMapping != null) {
-            fieldMappingsDataGrid.getEditor().editItem(selectedMapping);
+    @Subscribe("editInlineBtn")
+    public void onEditInlineBtnClick(final ClickEvent<JmixButton> event) {
+        MetaPackageFieldMapping sel = fieldMappingsDataGrid.getSingleSelectedItem();
+        if (sel != null) {
+            fieldMappingsDataGrid.getEditor().editItem(sel);
+        } else {
+            notifications.create("Hãy chọn một Field Mapping để sửa.")
+                    .withType(Notifications.Type.WARNING)
+                    .show();
         }
     }
-
 }

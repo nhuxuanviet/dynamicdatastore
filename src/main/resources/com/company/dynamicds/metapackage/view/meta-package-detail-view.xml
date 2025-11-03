@@ -3,52 +3,72 @@
       title="Meta Package Configuration"
       focusComponent="form">
 
+    <!-- ===================== DATA ===================== -->
     <data>
-        <collection id="dynamicDataStoreConfigsDc" class="com.company.dynamicds.dynamicds.entity.DynamicDataStoreConfig">
+        <!-- Danh sách DynamicDataStoreConfig (chỉ đọc) -->
+        <collection id="dynamicDataStoreConfigsDc"
+                    class="com.company.dynamicds.dynamicds.entity.DynamicDataStoreConfig">
             <loader id="dynamicDataStoreConfigsDl" readOnly="true">
-                <query>
-                    <![CDATA[select e from dwh_DynamicDataStore e]]>
-                </query>
+                <query><![CDATA[
+                    select e from dwh_DynamicDataStore e
+                ]]></query>
             </loader>
             <fetchPlan extends="_base"/>
         </collection>
-        <instance id="metaPackageDc" class="com.company.dynamicds.metapackage.entity.MetaPackage">
+
+        <!-- MetaPackage đang edit -->
+        <instance id="metaPackageDc"
+                  class="com.company.dynamicds.metapackage.entity.MetaPackage">
             <loader id="metaPackageDl"/>
             <fetchPlan extends="_base">
                 <property name="sources" fetchPlan="_base">
                     <property name="metadataDefinition" fetchPlan="_base"/>
+                    <!-- Giữ hoặc bỏ fieldMappings cũng được; query riêng vẫn chạy -->
                     <property name="fieldMappings" fetchPlan="_base"/>
                 </property>
             </fetchPlan>
-            <!-- collection con thuộc entity đang edit -->
+
+            <!-- Collection con thuộc MetaPackage -->
             <collection id="sourcesDc" property="sources"/>
         </instance>
 
-        <!-- con trỏ tới item đang chọn trong sourcesDc -->
-        <instance id="selectedSourceDc"
-                  class="com.company.dynamicds.metapackage.entity.MetaPackageSource"
-                  container="sourcesDc">
-
-            <!-- KHAI BÁO Ở ĐÂY: collection con dựa theo property của selectedSource -->
-            <collection id="fieldMappingsDc" property="fieldMappings"/>
-        </instance>
+        <!-- FieldMappings: KHÔNG nested container/property.
+             Dùng query ràng buộc selection của sourcesDc bằng tham số :container_sourcesDc -->
+        <collection id="fieldMappingsDc"
+                    class="com.company.dynamicds.metapackage.entity.MetaPackageFieldMapping">
+            <loader id="fieldMappingsDl">
+                <query><![CDATA[
+                    select e
+                    from MetaPackageFieldMapping e
+                    where e.metaPackageSource = :container_sourcesDc
+                ]]></query>
+            </loader>
+            <fetchPlan extends="_base"/>
+        </collection>
     </data>
 
+    <!-- ===================== FACETS ===================== -->
     <facets>
+        <!-- Khi đổi selection của sourcesDc, fieldMappingsDc tự reload -->
         <dataLoadCoordinator auto="true"/>
     </facets>
 
+    <!-- ===================== ACTIONS (view) ===================== -->
     <actions>
         <action id="saveAction" type="detail_saveClose"/>
         <action id="closeAction" type="detail_close"/>
     </actions>
 
+    <!-- ===================== LAYOUT ===================== -->
     <layout>
+
+        <!-- Form MetaPackage -->
         <formLayout id="form" dataContainer="metaPackageDc">
             <responsiveSteps>
                 <responsiveStep minWidth="0" columns="1"/>
                 <responsiveStep minWidth="40em" columns="2"/>
             </responsiveSteps>
+
             <textField id="nameField" property="name" required="true"/>
             <comboBox id="storeNameField" property="storeName"/>
             <select id="mergeStrategyField" property="mergeStrategy" required="true"/>
@@ -65,14 +85,16 @@
             <button action="sourcesDataGrid.remove"/>
         </hbox>
 
+        <!-- GRID: Sources -->
         <dataGrid id="sourcesDataGrid"
                   dataContainer="sourcesDc"
                   width="100%"
                   minHeight="15em"
                   columnReorderingAllowed="true">
             <actions>
+                <!-- list_* mặc định: mở detail view -->
                 <action id="create" type="list_create"/>
-                <action id="edit" type="list_edit"/>
+                <action id="edit"   type="list_edit"/>
                 <action id="remove" type="list_remove"/>
             </actions>
             <columns resizable="true">
@@ -86,31 +108,40 @@
         <label text="Select a source above to configure its field mappings"/>
 
         <details id="mappingsPanel" opened="true" summaryText="Field Mappings for Selected Source" width="100%">
+
             <hbox width="100%">
-                <button action="fieldMappingsDataGrid.create"/>
-                <button action="fieldMappingsDataGrid.edit"/>
+                <!-- NÚT THƯỜNG: xử lý inline trong Java -->
+                <button id="createInlineBtn" text="Add Mapping"/>
+                <button id="editInlineBtn"   text="Edit Mapping"/>
                 <button action="fieldMappingsDataGrid.remove"/>
             </hbox>
 
+            <!-- GRID: Field Mappings -->
             <dataGrid id="fieldMappingsDataGrid"
                       dataContainer="fieldMappingsDc"
                       width="100%"
                       minHeight="15em"
                       columnReorderingAllowed="true">
+
                 <actions>
-                    <action id="create" type="list_create"/>
-                    <action id="edit" type="list_edit"/>
+                    <!-- Chỉ giữ remove mặc định -->
                     <action id="remove" type="list_remove"/>
                 </actions>
+
                 <columns resizable="true">
                     <column property="sourceFieldName" editable="true"/>
                     <column property="targetFieldName" editable="true"/>
-                    <column property="dataType" editable="true">
-                        <comboBox id="dataTypeEditor" itemsEnum="com.company.dynamicds.dynamicds.entity.MetadataFieldType"/>
-                    </column>
-                    <column property="isRequired" editable="true"/>
+                    <column property="dataType"       editable="true"/>
+                    <column property="isRequired"     editable="true"/>
                     <column property="transformScript"/>
                 </columns>
+
+                <!-- Editor components đặt trong <editor> -->
+                <editor buffered="false">
+                    <field column="dataType">
+                        <comboBox itemsEnum="com.company.dynamicds.dynamicds.entity.MetadataFieldType"/>
+                    </field>
+                </editor>
             </dataGrid>
         </details>
 
