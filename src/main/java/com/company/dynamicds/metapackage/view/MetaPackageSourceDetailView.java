@@ -18,12 +18,12 @@ import io.jmix.flowui.view.*;
 @EditedEntityContainer("metaPackageSourceDc")
 public class MetaPackageSourceDetailView extends StandardDetailView<MetaPackageSource> {
 
-    @ViewComponent
-    private DataGrid<MetaPackageFieldMapping> fieldMappingsDataGrid;
+//    @ViewComponent
+//    private DataGrid<MetaPackageFieldMapping> fieldMappingsDataGrid;
 
     @Subscribe
     public void onInit(final InitEvent event) {
         // Setup inline editor for field mappings grid
-        GridEditorUtils.setupInlineEditor(fieldMappingsDataGrid);
+//        GridEditorUtils.setupInlineEditor(fieldMappingsDataGrid);
     }
 }

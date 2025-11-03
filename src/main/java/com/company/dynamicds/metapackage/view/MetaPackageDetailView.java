@@ -51,4 +51,9 @@ public class MetaPackageDetailView extends StandardDetailView<MetaPackage> {
         GridEditorUtils.setupInlineEditor(fieldMappingsDataGrid);
     }
 
+    @Install(to = "sourcesDataGrid.create", subject = "initializer")
+    private void sourcesCreateInitializer(com.company.dynamicds.metapackage.entity.MetaPackageSource e) {
+        e.setMetaPackage(getEditedEntity()); // gán cha, tránh may-not-be-null
+    }
+
 }

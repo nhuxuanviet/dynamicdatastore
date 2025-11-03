@@ -33,43 +33,52 @@
 
     <layout>
         <formLayout id="form" dataContainer="metaPackageSourceDc">
-            <textField id="aliasField" property="alias" required="true"/>
-            <entityPicker id="metadataDefinitionField" property="metadataDefinition">
+            <textField id="aliasField" property="alias"
+                       required="true"
+                       requiredMessage="Alias không được để trống"/>
+
+            <entityPicker id="metadataDefinitionField" property="metadataDefinition"
+                          required="true"
+                          requiredMessage="Phải chọn Metadata Definition">
                 <actions>
                     <action id="entityLookup" type="entity_lookup"/>
                     <action id="entityClear" type="entity_clear"/>
                 </actions>
             </entityPicker>
-            <textField id="orderIndexField" property="orderIndex" required="true"/>
+
+            <textField id="orderIndexField" property="orderIndex"
+                       required="true"
+                       requiredMessage="Order index không được để trống"/>
         </formLayout>
+
 
         <hbox id="detailActions">
             <button id="saveAndCloseBtn" action="saveAction"/>
             <button id="closeBtn" action="closeAction"/>
         </hbox>
 
-        <h4 text="msg://metaPackageSourceDetailView.fieldMappings"/>
+<!--        <h4 text="msg://metaPackageSourceDetailView.fieldMappings"/>-->
 
-        <dataGrid id="fieldMappingsDataGrid"
-                  dataContainer="fieldMappingsDc"
-                  width="100%"
-                  minHeight="20em">
-            <actions>
-                <action id="create" type="list_create"/>
-                <action id="edit" type="list_edit"/>
-                <action id="remove" type="list_remove"/>
-            </actions>
-            <columns>
-                <column property="sourceFieldName"/>
-                <column property="targetFieldName"/>
-                <column property="dataType"/>
-                <column property="isRequired"/>
-            </columns>
-            <buttonsPanel>
-                <button id="createBtn" action="fieldMappingsDataGrid.create"/>
-                <button id="editBtn" action="fieldMappingsDataGrid.edit"/>
-                <button id="removeBtn" action="fieldMappingsDataGrid.remove"/>
-            </buttonsPanel>
-        </dataGrid>
+<!--        <dataGrid id="fieldMappingsDataGrid"-->
+<!--                  dataContainer="fieldMappingsDc"-->
+<!--                  width="100%"-->
+<!--                  minHeight="20em">-->
+<!--            <actions>-->
+<!--                <action id="create" type="list_create"/>-->
+<!--                <action id="edit" type="list_edit"/>-->
+<!--                <action id="remove" type="list_remove"/>-->
+<!--            </actions>-->
+<!--            <columns>-->
+<!--                <column property="sourceFieldName"/>-->
+<!--                <column property="targetFieldName"/>-->
+<!--                <column property="dataType"/>-->
+<!--                <column property="isRequired"/>-->
+<!--            </columns>-->
+<!--            <buttonsPanel>-->
+<!--                <button id="createBtn" action="fieldMappingsDataGrid.create"/>-->
+<!--                <button id="editBtn" action="fieldMappingsDataGrid.edit"/>-->
+<!--                <button id="removeBtn" action="fieldMappingsDataGrid.remove"/>-->
+<!--            </buttonsPanel>-->
+<!--        </dataGrid>-->
     </layout>
 </view>
