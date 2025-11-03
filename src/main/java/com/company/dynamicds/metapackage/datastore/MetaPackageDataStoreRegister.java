@@ -2,11 +2,8 @@ package com.company.dynamicds.metapackage.datastore;
 
 import com.company.dynamicds.metapackage.entity.MetaPackage;
 import com.company.dynamicds.metapackage.service.MetaPackageExecutor;
-import io.jmix.core.Metadata;
 import io.jmix.core.Stores;
-import io.jmix.core.impl.MetadataImpl;
 import io.jmix.core.impl.StoreDescriptorsRegistry;
-import io.jmix.core.metamodel.model.MetaClass;
 import io.jmix.core.metamodel.model.Store;
 import io.jmix.core.metamodel.model.StoreDescriptor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,9 +26,7 @@ public class MetaPackageDataStoreRegister {
     private final ApplicationContext applicationContext;
     private final StoreDescriptorsRegistry storeDescriptorsRegistry;
     private final Stores stores;
-    private final Metadata metadata;
     private final MetaPackageExecutor executor;
-    private final MetaPackageMetaClassFactory metaClassFactory;
 
     private final Map<String, MetaPackageDataStore> registeredStores = new ConcurrentHashMap<>();
 
@@ -39,16 +34,12 @@ public class MetaPackageDataStoreRegister {
                                          ApplicationContext applicationContext,
                                          StoreDescriptorsRegistry storeDescriptorsRegistry,
                                          Stores stores,
-                                         Metadata metadata,
-                                         MetaPackageExecutor executor,
-                                         MetaPackageMetaClassFactory metaClassFactory) {
+                                         MetaPackageExecutor executor) {
         this.beanFactory = beanFactory;
         this.applicationContext = applicationContext;
         this.storeDescriptorsRegistry = storeDescriptorsRegistry;
         this.stores = stores;
-        this.metadata = metadata;
         this.executor = executor;
-        this.metaClassFactory = metaClassFactory;
     }
 
     /**
@@ -104,18 +95,9 @@ public class MetaPackageDataStoreRegister {
             Store jmixStore = applicationContext.getBean(Store.class, storeName, descriptor);
             getStoresMap().put(storeName, jmixStore);
 
-            // 6. NOW create dynamic MetaClass (after Store exists)
-            MetaClass metaClass = metaClassFactory.createMetaClass(metaPackage, storeName);
-
-            // 7. Set store for MetaClass (required for proper operation)
-            if (metaClass instanceof com.company.dynamicds.dynamicds.DynamicMetaClass dynamicMetaClass) {
-                dynamicMetaClass.setStore(jmixStore);
-            }
-
-            // 8. Register MetaClass with metadata
-            registerMetaClass(metaClass, storeName);
-
-            // 9. Save to internal registry
+            // 6. Save to internal registry
+            // Note: MetaClass is NOT registered globally - it will be created on-the-fly when needed
+            // This is the same pattern as DynamicDataStore
             registeredStores.put(storeName, dataStore);
 
             log.info("✓ Successfully registered MetaPackage store: {}", storeName);
@@ -143,9 +125,6 @@ public class MetaPackageDataStoreRegister {
 
             // Remove descriptor
             getDescriptorMap().remove(storeName);
-
-            // Unregister MetaClass
-            unregisterMetaClass(storeName);
 
             // Try to remove Spring bean singleton (best effort)
             // Note: DefaultSingletonBeanRegistry doesn't expose destroySingleton in Spring 6.x
@@ -187,10 +166,7 @@ public class MetaPackageDataStoreRegister {
             // 3. Remove descriptor
             getDescriptorMap().remove(storeName);
 
-            // 4. Unregister MetaClass from metadata
-            unregisterMetaClass(storeName);
-
-            // 5. Note: Spring bean cleanup not needed for singleton registry
+            // Note: Spring bean cleanup not needed for singleton registry
             // ConfigurableListableBeanFactory doesn't provide destroySingleton in Jmix 2.6
 
             log.info("✓ Successfully unregistered MetaPackage store: {}", storeName);
@@ -245,62 +221,4 @@ public class MetaPackageDataStoreRegister {
         }
     }
 
-    /**
-     * Register MetaClass with Jmix metadata
-     */
-    @SuppressWarnings("unchecked")
-    private void registerMetaClass(MetaClass metaClass, String storeName) {
-        try {
-            if (!(metadata instanceof MetadataImpl metadataImpl)) {
-                throw new IllegalStateException("Metadata is not instance of MetadataImpl");
-            }
-
-            // Access internal session field
-            var sessionField = MetadataImpl.class.getDeclaredField("session");
-            sessionField.setAccessible(true);
-            Object session = sessionField.get(metadataImpl);
-
-            // Access metaClasses map
-            var metaClassesField = session.getClass().getDeclaredField("metaClasses");
-            metaClassesField.setAccessible(true);
-            Map<String, MetaClass> metaClasses = (Map<String, MetaClass>) metaClassesField.get(session);
-
-            // Register MetaClass
-            String entityName = metaClass.getName();
-            metaClasses.put(entityName, metaClass);
-
-            log.debug("Registered MetaClass: {} in store: {}", entityName, storeName);
-
-        } catch (Exception e) {
-            log.error("Failed to register MetaClass: {}", metaClass.getName(), e);
-            throw new RuntimeException("Failed to register MetaClass", e);
-        }
-    }
-
-    /**
-     * Unregister MetaClass from metadata
-     */
-    @SuppressWarnings("unchecked")
-    private void unregisterMetaClass(String entityName) {
-        try {
-            if (!(metadata instanceof MetadataImpl metadataImpl)) {
-                return;
-            }
-
-            var sessionField = MetadataImpl.class.getDeclaredField("session");
-            sessionField.setAccessible(true);
-            Object session = sessionField.get(metadataImpl);
-
-            var metaClassesField = session.getClass().getDeclaredField("metaClasses");
-            metaClassesField.setAccessible(true);
-            Map<String, MetaClass> metaClasses = (Map<String, MetaClass>) metaClassesField.get(session);
-
-            metaClasses.remove(entityName);
-
-            log.debug("Unregistered MetaClass: {}", entityName);
-
-        } catch (Exception e) {
-            log.error("Failed to unregister MetaClass: {}", entityName, e);
-        }
-    }
 }
