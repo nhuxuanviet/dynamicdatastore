@@ -19,9 +19,11 @@
                     <property name="metadataDefinition" fetchPlan="_base"/>
                     <property name="fieldMappings" fetchPlan="_base"/>
                 </property>
+                <property name="relationships" fetchPlan="_base"/>
             </fetchPlan>
             <!-- collection con thuộc entity đang edit -->
             <collection id="sourcesDc" property="sources"/>
+            <collection id="relationshipsDc" property="relationships"/>
         </instance>
 
         <!-- con trỏ tới item đang chọn trong sourcesDc -->
@@ -113,6 +115,38 @@
                 </columns>
             </dataGrid>
         </details>
+
+        <label text="Relationships" classNames="text-xl font-semibold mt-l"/>
+        <label text="Define how sources are joined together (like SQL JOIN)"/>
+
+        <hbox width="100%">
+            <button action="relationshipsDataGrid.create"/>
+            <button action="relationshipsDataGrid.edit"/>
+            <button action="relationshipsDataGrid.remove"/>
+        </hbox>
+
+        <dataGrid id="relationshipsDataGrid"
+                  dataContainer="relationshipsDc"
+                  width="100%"
+                  minHeight="15em"
+                  columnReorderingAllowed="true">
+            <actions>
+                <action id="create" type="list_create"/>
+                <action id="edit" type="list_edit"/>
+                <action id="remove" type="list_remove"/>
+            </actions>
+            <columns resizable="true">
+                <column property="name" editable="true"/>
+                <column property="sourceAlias" editable="true"/>
+                <column property="sourceField" editable="true"/>
+                <column property="targetAlias" editable="true"/>
+                <column property="targetField" editable="true"/>
+                <column property="relationshipType" editable="true">
+                    <comboBox id="relationshipTypeEditor" itemsEnum="com.company.dynamicds.metapackage.enums.RelationshipType"/>
+                </column>
+                <column property="isActive" editable="true"/>
+            </columns>
+        </dataGrid>
 
         <hbox id="detailActions">
             <button id="saveAndCloseButton" action="saveAction"/>

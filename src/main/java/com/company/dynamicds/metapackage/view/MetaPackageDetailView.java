@@ -3,6 +3,7 @@ package com.company.dynamicds.metapackage.view;
 import com.company.dynamicds.dynamicds.entity.DynamicDataStoreConfig;
 import com.company.dynamicds.metapackage.entity.MetaPackage;
 import com.company.dynamicds.metapackage.entity.MetaPackageFieldMapping;
+import com.company.dynamicds.metapackage.entity.MetaPackageRelationship;
 import com.company.dynamicds.metapackage.entity.MetaPackageSource;
 import com.company.dynamicds.utils.ui.GridEditorUtils;
 import com.company.dynamicds.view.main.MainView;
@@ -39,12 +40,16 @@ public class MetaPackageDetailView extends StandardDetailView<MetaPackage> {
     @ViewComponent
     private DataGrid<MetaPackageFieldMapping> fieldMappingsDataGrid;
     @ViewComponent
+    private DataGrid<MetaPackageRelationship> relationshipsDataGrid;
+    @ViewComponent
     private JmixComboBox<String> storeNameField;
 
     @ViewComponent
     private CollectionContainer<DynamicDataStoreConfig> dynamicDataStoreConfigsDc;
     @ViewComponent
     private CollectionPropertyContainer<MetaPackageFieldMapping> fieldMappingsDc;
+    @ViewComponent
+    private CollectionPropertyContainer<MetaPackageRelationship> relationshipsDc;
     @ViewComponent
     private DataContext dataContext;
     @Autowired
@@ -62,11 +67,18 @@ public class MetaPackageDetailView extends StandardDetailView<MetaPackage> {
         // Setup inline editors for data grids
         GridEditorUtils.setupInlineEditor(sourcesDataGrid);
         GridEditorUtils.setupInlineEditor(fieldMappingsDataGrid);
+        GridEditorUtils.setupInlineEditor(relationshipsDataGrid);
     }
 
     @Install(to = "sourcesDataGrid.create", subject = "initializer")
     private void sourcesCreateInitializer(com.company.dynamicds.metapackage.entity.MetaPackageSource e) {
         e.setMetaPackage(getEditedEntity()); // gán cha, tránh may-not-be-null
+    }
+
+    @Install(to = "relationshipsDataGrid.create", subject = "initializer")
+    private void relationshipsCreateInitializer(MetaPackageRelationship e) {
+        e.setMetaPackage(getEditedEntity());
+        e.setIsActive(true); // default to active
     }
 
     @Subscribe("fieldMappingsDataGrid.create")

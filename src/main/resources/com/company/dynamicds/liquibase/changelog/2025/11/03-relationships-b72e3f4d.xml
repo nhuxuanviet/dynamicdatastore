@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <changeSet id="1" author="dynamicds">
+        <createTable tableName="DWH_META_PACKAGE_RELATIONSHIP">
+            <column name="ID" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="PK_META_PACKAGE_RELATIONSHIP"/>
+            </column>
+            <column name="META_PACKAGE_ID" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="NAME" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="SOURCE_ALIAS" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="SOURCE_FIELD" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="TARGET_ALIAS" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="TARGET_FIELD" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="RELATIONSHIP_TYPE" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="IS_ACTIVE" type="BOOLEAN"/>
+            <column name="DESCRIPTION" type="CLOB"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="2" author="dynamicds">
+        <addForeignKeyConstraint baseColumnNames="META_PACKAGE_ID"
+                                 baseTableName="DWH_META_PACKAGE_RELATIONSHIP"
+                                 constraintName="FK_META_PKG_REL_ON_META_PACKAGE"
+                                 referencedColumnNames="ID"
+                                 referencedTableName="DWH_META_PACKAGE"/>
+    </changeSet>
+
+    <changeSet id="3" author="dynamicds">
+        <createIndex indexName="IDX_META_PKG_REL_PACKAGE" tableName="DWH_META_PACKAGE_RELATIONSHIP">
+            <column name="META_PACKAGE_ID"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

@@ -3,8 +3,10 @@ package com.company.dynamicds.metapackage.service;
 import com.company.dynamicds.dynamicds.DynamicKeyValueRestInvoker;
 import com.company.dynamicds.metapackage.entity.MetaPackage;
 import com.company.dynamicds.metapackage.entity.MetaPackageFieldMapping;
+import com.company.dynamicds.metapackage.entity.MetaPackageRelationship;
 import com.company.dynamicds.metapackage.entity.MetaPackageSource;
 import com.company.dynamicds.metapackage.enums.MergeStrategy;
+import com.company.dynamicds.metapackage.enums.RelationshipType;
 import io.jmix.core.*;
 import io.jmix.core.entity.KeyValueEntity;
 import io.jmix.core.metamodel.model.MetaProperty;
@@ -103,8 +105,15 @@ public class MetaPackageExecutor {
         // Fetch data from all sources ASYNC (parallel)
         Map<String, List<KeyValueEntity>> sourceDataMap = fetchAllSourcesAsync(sortedSources);
 
-        // Merge data according to strategy
-        List<KeyValueEntity> mergedData = mergeData(sourceDataMap, sortedSources, fullPackage.getMergeStrategy());
+        // Merge data - use relationships if defined, otherwise use legacy merge strategy
+        List<KeyValueEntity> mergedData;
+        if (fullPackage.getRelationships() != null && !fullPackage.getRelationships().isEmpty()) {
+            // NEW: Relationship-based merge (SQL JOIN-like)
+            mergedData = mergeWithRelationships(sourceDataMap, sortedSources, fullPackage.getRelationships());
+        } else {
+            // LEGACY: Strategy-based merge (for backward compatibility)
+            mergedData = mergeData(sourceDataMap, sortedSources, fullPackage.getMergeStrategy());
+        }
 
         // Apply filtering (PropertyCondition/LogicalCondition)
         if (condition != null) {
@@ -130,7 +139,7 @@ public class MetaPackageExecutor {
     /**
      * Load MetaPackage with all sources, mappings, and metadata definitions
      */
-    /** Load MetaPackage với đầy đủ graph (sources, mappings, metadata definitions) */
+    /** Load MetaPackage với đầy đủ graph (sources, mappings, relationships, metadata definitions) */
     private MetaPackage loadFullMetaPackage(UUID metaPackageId) {
         // 1) Thử lấy fetch plan đặt tên nếu bạn đã khai báo trong XML: "metaPackage-full"
         FetchPlan fetchPlan = null;
@@ -150,6 +159,7 @@ public class MetaPackageExecutor {
                                     .addFetchPlan(FetchPlan.BASE)
                                     .add("metadataFields", FetchPlan.BASE))
                             .add("fieldMappings", FetchPlan.BASE))
+                    .add("relationships", FetchPlan.BASE)
                     .build();
         }
 
@@ -322,6 +332,220 @@ public class MetaPackageExecutor {
         // For now, similar to SEQUENTIAL
         // TODO: Implement proper nested logic with join keys
         return mergeSequential(sourceDataMap, sources);
+    }
+
+    /**
+     * NEW: Merge data based on relationships (SQL JOIN-like)
+     * Supports ONE_TO_MANY, MANY_TO_ONE, and MANY_TO_MANY relationships
+     */
+    private List<KeyValueEntity> mergeWithRelationships(Map<String, List<KeyValueEntity>> sourceDataMap,
+                                                         List<MetaPackageSource> sources,
+                                                         List<MetaPackageRelationship> relationships) {
+        log.info("Merging data using {} relationships", relationships.size());
+
+        if (sources.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Filter active relationships only
+        List<MetaPackageRelationship> activeRelationships = relationships.stream()
+                .filter(r -> r.getIsActive() != null && r.getIsActive())
+                .collect(Collectors.toList());
+
+        if (activeRelationships.isEmpty()) {
+            log.warn("No active relationships found, falling back to SEQUENTIAL merge");
+            return mergeSequential(sourceDataMap, sources);
+        }
+
+        // Step 1: Start with first source as base
+        MetaPackageSource baseSource = sources.get(0);
+        List<KeyValueEntity> baseData = sourceDataMap.get(baseSource.getAlias());
+
+        if (baseData == null || baseData.isEmpty()) {
+            log.warn("Base source {} has no data", baseSource.getAlias());
+            return Collections.emptyList();
+        }
+
+        // Step 2: Initialize result with base source data (mapped to target fields)
+        List<KeyValueEntity> result = new ArrayList<>();
+        for (KeyValueEntity baseEntity : baseData) {
+            KeyValueEntity mappedEntity = dataManager.create(KeyValueEntity.class);
+            applyFieldMappings(baseEntity, mappedEntity, baseSource);
+            result.add(mappedEntity);
+        }
+
+        // Step 3: Apply each relationship to join data
+        for (MetaPackageRelationship relationship : activeRelationships) {
+            log.debug("Applying relationship: {} ({}) -> {} ({})",
+                    relationship.getSourceAlias(), relationship.getSourceField(),
+                    relationship.getTargetAlias(), relationship.getTargetField());
+
+            result = applyRelationshipJoin(result, sourceDataMap, sources, relationship);
+        }
+
+        log.info("Merge with relationships completed, result count: {}", result.size());
+        return result;
+    }
+
+    /**
+     * Apply a single relationship join to the current result set
+     */
+    private List<KeyValueEntity> applyRelationshipJoin(List<KeyValueEntity> currentResult,
+                                                        Map<String, List<KeyValueEntity>> sourceDataMap,
+                                                        List<MetaPackageSource> sources,
+                                                        MetaPackageRelationship relationship) {
+        // Find source and target in sources list
+        MetaPackageSource targetSource = sources.stream()
+                .filter(s -> s.getAlias().equals(relationship.getTargetAlias()))
+                .findFirst()
+                .orElse(null);
+
+        if (targetSource == null) {
+            log.warn("Target source not found for alias: {}", relationship.getTargetAlias());
+            return currentResult;
+        }
+
+        List<KeyValueEntity> targetData = sourceDataMap.get(relationship.getTargetAlias());
+        if (targetData == null || targetData.isEmpty()) {
+            log.warn("Target source {} has no data", relationship.getTargetAlias());
+            return currentResult;
+        }
+
+        // Build index for target data for faster lookup
+        Map<Object, List<KeyValueEntity>> targetIndex = buildIndex(targetData, relationship.getTargetField());
+
+        RelationshipType type = relationship.getRelationshipType();
+        List<KeyValueEntity> joinedResult = new ArrayList<>();
+
+        for (KeyValueEntity entity : currentResult) {
+            // Get foreign key value from source field
+            Object foreignKeyValue = getFieldValue(entity, relationship.getSourceField());
+
+            if (foreignKeyValue == null) {
+                // No match - add entity as-is (LEFT JOIN behavior)
+                joinedResult.add(entity);
+                continue;
+            }
+
+            // Handle different relationship types
+            if (type == RelationshipType.MANY_TO_ONE || type == RelationshipType.ONE_TO_MANY) {
+                // For MANY_TO_ONE and ONE_TO_MANY: find matching record(s)
+                List<KeyValueEntity> matches = targetIndex.getOrDefault(foreignKeyValue, Collections.emptyList());
+
+                if (matches.isEmpty()) {
+                    // No match - add entity as-is
+                    joinedResult.add(entity);
+                } else {
+                    // Join with each match
+                    for (KeyValueEntity match : matches) {
+                        KeyValueEntity joined = copyEntity(entity);
+                        applyFieldMappings(match, joined, targetSource);
+                        joinedResult.add(joined);
+                    }
+                }
+
+            } else if (type == RelationshipType.MANY_TO_MANY) {
+                // For MANY_TO_MANY: foreignKeyValue might be array/collection
+                List<Object> foreignKeys = extractArrayValues(foreignKeyValue);
+
+                if (foreignKeys.isEmpty()) {
+                    joinedResult.add(entity);
+                } else {
+                    // Join with all matching records
+                    for (Object fkValue : foreignKeys) {
+                        List<KeyValueEntity> matches = targetIndex.getOrDefault(fkValue, Collections.emptyList());
+                        for (KeyValueEntity match : matches) {
+                            KeyValueEntity joined = copyEntity(entity);
+                            applyFieldMappings(match, joined, targetSource);
+                            joinedResult.add(joined);
+                        }
+                    }
+                }
+            }
+        }
+
+        return joinedResult;
+    }
+
+    /**
+     * Build index for fast lookup: targetField value -> List of entities
+     */
+    private Map<Object, List<KeyValueEntity>> buildIndex(List<KeyValueEntity> data, String fieldPath) {
+        Map<Object, List<KeyValueEntity>> index = new HashMap<>();
+
+        for (KeyValueEntity entity : data) {
+            Object value = getFieldValue(entity, fieldPath);
+            if (value != null) {
+                index.computeIfAbsent(value, k -> new ArrayList<>()).add(entity);
+            }
+        }
+
+        return index;
+    }
+
+    /**
+     * Get field value from entity, supporting nested paths (e.g., "address.city")
+     */
+    private Object getFieldValue(KeyValueEntity entity, String fieldPath) {
+        if (fieldPath == null || fieldPath.isBlank()) {
+            return null;
+        }
+
+        // Simple field (no nesting)
+        if (!fieldPath.contains(".")) {
+            try {
+                return entity.getValue(fieldPath);
+            } catch (Exception e) {
+                return null;
+            }
+        }
+
+        // Nested field path
+        String[] parts = fieldPath.split("\\.");
+        Object current = entity;
+
+        for (String part : parts) {
+            if (current == null) {
+                return null;
+            }
+
+            if (current instanceof KeyValueEntity) {
+                try {
+                    current = ((KeyValueEntity) current).getValue(part);
+                } catch (Exception e) {
+                    return null;
+                }
+            } else if (current instanceof Map) {
+                current = ((Map<?, ?>) current).get(part);
+            } else {
+                // Unsupported type
+                return null;
+            }
+        }
+
+        return current;
+    }
+
+    /**
+     * Extract array values for MANY_TO_MANY relationships
+     * Handles: List, Array, or single value
+     */
+    @SuppressWarnings("unchecked")
+    private List<Object> extractArrayValues(Object value) {
+        if (value == null) {
+            return Collections.emptyList();
+        }
+
+        if (value instanceof List) {
+            return new ArrayList<>((List<?>) value);
+        }
+
+        if (value instanceof Object[]) {
+            return Arrays.asList((Object[]) value);
+        }
+
+        // Single value - wrap in list
+        return Collections.singletonList(value);
     }
 
     /**

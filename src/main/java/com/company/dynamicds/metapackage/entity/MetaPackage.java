@@ -51,6 +51,19 @@ public class MetaPackage {
     @OnDeleteInverse(DeletePolicy.CASCADE)
     private List<MetaPackageSource> sources;
 
+    @Composition
+    @OneToMany(mappedBy = "metaPackage")
+    @OnDeleteInverse(DeletePolicy.CASCADE)
+    private List<MetaPackageRelationship> relationships;
+
+    public List<MetaPackageRelationship> getRelationships() {
+        return relationships;
+    }
+
+    public void setRelationships(List<MetaPackageRelationship> relationships) {
+        this.relationships = relationships;
+    }
+
     public List<MetaPackageSource> getSources() {
         return sources;
     }
