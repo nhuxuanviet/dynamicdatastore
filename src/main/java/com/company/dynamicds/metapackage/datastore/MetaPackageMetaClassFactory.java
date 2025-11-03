@@ -43,7 +43,7 @@ public class MetaPackageMetaClassFactory {
         // Create DynamicMetaClass using proper Jmix 2.6 pattern
         DynamicMetaClass metaClass = new DynamicMetaClass();
         metaClass.setName(entityName);
-        metaClass.setStore(stores.get(storeName));
+        // Note: Store will be set AFTER Store is created in MetaPackageDataStoreRegister
 
         // Use KeyValueMetaClassFactory.Configurer to add properties
         KeyValueMetaClassFactory.Configurer configurer =
