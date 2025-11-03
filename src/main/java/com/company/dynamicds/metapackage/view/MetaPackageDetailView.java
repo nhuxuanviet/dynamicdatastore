@@ -9,6 +9,7 @@ import com.company.dynamicds.view.main.MainView;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.router.Route;
 import io.jmix.core.DataManager;
+import io.jmix.flowui.Notifications;
 import io.jmix.flowui.component.combobox.JmixComboBox;
 import io.jmix.flowui.component.grid.DataGrid;
 import io.jmix.flowui.model.CollectionContainer;
@@ -48,6 +49,8 @@ public class MetaPackageDetailView extends StandardDetailView<MetaPackage> {
     private DataContext dataContext;
     @Autowired
     private DataManager dataManager;
+    @Autowired
+    private Notifications notifications;
 
     @Subscribe
     public void onInit(final InitEvent event) {
@@ -74,6 +77,9 @@ public class MetaPackageDetailView extends StandardDetailView<MetaPackage> {
         // Get selected source
         MetaPackageSource selectedSource = sourcesDataGrid.getSingleSelectedItem();
         if (selectedSource == null) {
+            notifications.create("Vui lòng chọn một Data Source trước khi tạo Field Mapping")
+                    .withType(Notifications.Type.WARNING)
+                    .show();
             return; // Cannot create field mapping without a source
         }
 

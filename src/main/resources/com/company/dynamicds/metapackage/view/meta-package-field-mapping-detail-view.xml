@@ -23,6 +23,15 @@
 
     <layout>
         <formLayout id="form" dataContainer="metaPackageFieldMappingDc">
+            <entityPicker id="metaPackageSourceField" property="metaPackageSource"
+                          required="true"
+                          requiredMessage="Phải chọn Meta Package Source">
+                <actions>
+                    <action id="entityLookup" type="entity_lookup"/>
+                    <action id="entityClear" type="entity_clear"/>
+                </actions>
+            </entityPicker>
+
             <textField id="sourceFieldNameField" property="sourceFieldName" required="true"/>
             <textField id="targetFieldNameField" property="targetFieldName" required="true"/>
             <comboBox id="dataTypeField" property="dataType" required="true"

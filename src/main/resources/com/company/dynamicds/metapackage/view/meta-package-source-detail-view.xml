@@ -6,6 +6,7 @@
         <instance id="metaPackageSourceDc"
                   class="com.company.dynamicds.metapackage.entity.MetaPackageSource">
             <fetchPlan extends="_base">
+                <property name="metaPackage" fetchPlan="_base"/>
                 <property name="metadataDefinition" fetchPlan="_base"/>
                 <property name="fieldMappings" fetchPlan="_base"/>
             </fetchPlan>
@@ -33,6 +34,15 @@
 
     <layout>
         <formLayout id="form" dataContainer="metaPackageSourceDc">
+            <entityPicker id="metaPackageField" property="metaPackage"
+                          required="true"
+                          requiredMessage="Phải chọn Meta Package">
+                <actions>
+                    <action id="entityLookup" type="entity_lookup"/>
+                    <action id="entityClear" type="entity_clear"/>
+                </actions>
+            </entityPicker>
+
             <textField id="aliasField" property="alias"
                        required="true"
                        requiredMessage="Alias không được để trống"/>
