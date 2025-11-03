@@ -46,8 +46,10 @@
                 <action id="remove" type="list_remove"/>
             </actions>
             <columns>
-                <column property="name"/>
-                <column property="fieldType"/>
+                <column property="name" editable="true"/>
+                <column property="fieldType" editable="true">
+                    <comboBox id="fieldTypeEditor" itemsEnum="com.company.dynamicds.dynamicds.entity.MetadataFieldType"/>
+                </column>
                 <column property="description" editable="true"/>
                 <column property="require" editable="true"/>
             </columns>

@@ -9,6 +9,7 @@ import com.company.dynamicds.utils.validation.StringValidation;
 import com.company.dynamicds.view.main.MainView;
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.router.Route;
+import io.jmix.core.DataManager;
 import io.jmix.flowui.Notifications;
 import io.jmix.flowui.component.combobox.JmixComboBox;
 import io.jmix.flowui.component.grid.DataGrid;
@@ -42,6 +43,8 @@ public class MetadataDefinitionDetailView extends StandardDetailView<MetadataDef
     private CollectionPropertyContainer<MetadataField> metadataFieldsDc;
     @ViewComponent
     private DataContext dataContext;
+    @Autowired
+    private DataManager dataManager;
 
     @Subscribe
     public void onInit(final InitEvent event) {
@@ -98,6 +101,37 @@ public class MetadataDefinitionDetailView extends StandardDetailView<MetadataDef
     @Subscribe(id = "metadataDefinitionDc", target = Target.DATA_CONTAINER)
     public void onMetadataDefinitionDcItemChange(final InstanceContainer.ItemChangeEvent<MetadataDefinition> event) {
 
+    }
+
+    @Subscribe("metadataFieldsDataGrid.create")
+    public void onMetadataFieldsDataGridCreate(final io.jmix.flowui.action.list.CreateAction.ActionPerformedEvent event) {
+        // Prevent default behavior (opening detail view)
+        event.preventDefault();
+
+        // Create new MetadataField
+        MetadataField newField = dataManager.create(MetadataField.class);
+        newField.setMetadataDefinition(getEditedEntity());
+
+        // Merge into data context
+        MetadataField mergedField = dataContext.merge(newField);
+
+        // Add to collection
+        metadataFieldsDc.getMutableItems().add(mergedField);
+
+        // Start editing the new row
+        metadataFieldsDataGrid.getEditor().editItem(mergedField);
+    }
+
+    @Subscribe("metadataFieldsDataGrid.edit")
+    public void onMetadataFieldsDataGridEdit(final io.jmix.flowui.action.list.EditAction.ActionPerformedEvent event) {
+        // Prevent default behavior (opening detail view)
+        event.preventDefault();
+
+        // Get selected item and start inline editing
+        MetadataField selectedField = metadataFieldsDataGrid.getSingleSelectedItem();
+        if (selectedField != null) {
+            metadataFieldsDataGrid.getEditor().editItem(selectedField);
+        }
     }
 
 }

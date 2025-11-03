@@ -25,7 +25,8 @@
         <formLayout id="form" dataContainer="metaPackageFieldMappingDc">
             <textField id="sourceFieldNameField" property="sourceFieldName" required="true"/>
             <textField id="targetFieldNameField" property="targetFieldName" required="true"/>
-            <comboBox id="dataTypeField" property="dataType" required="true"/>
+            <comboBox id="dataTypeField" property="dataType" required="true"
+                      itemsEnum="com.company.dynamicds.dynamicds.entity.MetadataFieldType"/>
             <checkbox id="isRequiredField" property="isRequired"/>
             <textArea id="transformScriptField" property="transformScript" height="10em"/>
         </formLayout>

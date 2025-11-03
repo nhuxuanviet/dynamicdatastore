@@ -105,7 +105,9 @@
                 <columns resizable="true">
                     <column property="sourceFieldName" editable="true"/>
                     <column property="targetFieldName" editable="true"/>
-                    <column property="dataType" editable="true"/>
+                    <column property="dataType" editable="true">
+                        <comboBox id="dataTypeEditor" itemsEnum="com.company.dynamicds.dynamicds.entity.MetadataFieldType"/>
+                    </column>
                     <column property="isRequired" editable="true"/>
                     <column property="transformScript"/>
                 </columns>
