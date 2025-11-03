@@ -1,4 +1,4 @@
-package com.company.dynamicds.view.dynamicdatastore.metadata;
+package com.company.dynamicds.dynamicds.view.metadata;
 
 import com.company.dynamicds.dynamicds.entity.MetadataDefinition;
 import com.company.dynamicds.view.main.MainView;

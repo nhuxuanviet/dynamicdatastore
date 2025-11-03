@@ -20,7 +20,7 @@ import java.time.OffsetDateTime;
 public class BaseEntity {
     @Column(name = "VERSION", nullable = false)
     @Version
-    private Integer version;
+    private Integer version = 0;
 
     @CreatedBy
     @Column(name = "CREATED_BY")

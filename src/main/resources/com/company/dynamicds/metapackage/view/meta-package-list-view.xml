@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="Meta Packages"
+      focusComponent="metaPackagesDataGrid">
+    <data>
+        <collection id="metaPackagesDc"
+                    class="com.company.dynamicds.metapackage.entity.MetaPackage">
+            <fetchPlan extends="_base">
+                <property name="sources" fetchPlan="_base"/>
+            </fetchPlan>
+            <loader id="metaPackagesDl" readOnly="true">
+                <query>
+                    <![CDATA[select e from MetaPackage e order by e.name]]>
+                </query>
+            </loader>
+        </collection>
+    </data>
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+        <urlQueryParameters>
+            <genericFilter component="genericFilter"/>
+            <pagination component="pagination"/>
+        </urlQueryParameters>
+    </facets>
+    <actions>
+        <action id="selectAction" type="lookup_select"/>
+        <action id="discardAction" type="lookup_discard"/>
+    </actions>
+    <layout>
+        <genericFilter id="genericFilter"
+                       dataLoader="metaPackagesDl">
+            <properties include=".*"/>
+        </genericFilter>
+        <hbox id="buttonsPanel" classNames="buttons-panel">
+            <button id="createButton" action="metaPackagesDataGrid.createAction"/>
+            <button id="editButton" action="metaPackagesDataGrid.editAction"/>
+            <button id="removeButton" action="metaPackagesDataGrid.removeAction"/>
+            <hr/>
+            <button id="activateButton" action="metaPackagesDataGrid.activate" text="Activate" icon="CHECK"/>
+            <button id="deactivateButton" action="metaPackagesDataGrid.deactivate" text="Deactivate" icon="BAN"/>
+            <button id="reloadButton" action="metaPackagesDataGrid.reload" text="Reload" icon="REFRESH"/>
+            <simplePagination id="pagination" dataLoader="metaPackagesDl"/>
+        </hbox>
+        <dataGrid id="metaPackagesDataGrid"
+                  width="100%"
+                  minHeight="20em"
+                  dataContainer="metaPackagesDc"
+                  columnReorderingAllowed="true">
+            <actions>
+                <action id="createAction" type="list_create"/>
+                <action id="editAction" type="list_edit"/>
+                <action id="removeAction" type="list_remove"/>
+                <action id="activate" text="Activate"/>
+                <action id="deactivate" text="Deactivate"/>
+                <action id="reload" text="Reload"/>
+            </actions>
+            <columns resizable="true">
+                <column property="name"/>
+                <column property="storeName"/>
+                <column property="mergeStrategy"/>
+                <column property="isActive"/>
+                <column property="description"/>
+            </columns>
+        </dataGrid>
+        <hbox id="lookupActions" visible="false">
+            <button id="selectButton" action="selectAction"/>
+            <button id="discardButton" action="discardAction"/>
+        </hbox>
+    </layout>
+</view>

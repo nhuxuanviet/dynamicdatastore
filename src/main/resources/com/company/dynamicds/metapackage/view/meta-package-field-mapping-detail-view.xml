@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://metaPackageFieldMappingDetailView.title"
+      focusComponent="form">
+    <data>
+        <instance id="metaPackageFieldMappingDc"
+                  class="com.company.dynamicds.metapackage.entity.MetaPackageFieldMapping">
+            <fetchPlan extends="_base">
+                <property name="metaPackageSource" fetchPlan="_base"/>
+            </fetchPlan>
+            <loader/>
+        </instance>
+    </data>
+
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+    </facets>
+
+    <actions>
+        <action id="saveAction" type="detail_saveClose"/>
+        <action id="closeAction" type="detail_close"/>
+    </actions>
+
+    <layout>
+        <formLayout id="form" dataContainer="metaPackageFieldMappingDc">
+            <entityPicker id="metaPackageSourceField" property="metaPackageSource"
+                          required="true"
+                          requiredMessage="Phải chọn Meta Package Source">
+                <actions>
+                    <action id="entityLookup" type="entity_lookup"/>
+                    <action id="entityClear" type="entity_clear"/>
+                </actions>
+            </entityPicker>
+
+            <textField id="sourceFieldNameField" property="sourceFieldName" required="true"/>
+            <textField id="targetFieldNameField" property="targetFieldName" required="true"/>
+            <comboBox id="dataTypeField" property="dataType" required="true"
+                      itemsEnum="com.company.dynamicds.dynamicds.entity.MetadataFieldType"/>
+            <checkbox id="isRequiredField" property="isRequired"/>
+            <textArea id="transformScriptField" property="transformScript" height="10em"/>
+        </formLayout>
+
+        <hbox id="detailActions">
+            <button id="saveAndCloseBtn" action="saveAction"/>
+            <button id="closeBtn" action="closeAction"/>
+        </hbox>
+    </layout>
+</view>

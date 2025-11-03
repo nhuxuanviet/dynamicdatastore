@@ -1,4 +1,4 @@
-package com.company.dynamicds.view.dynamicdatastore;
+package com.company.dynamicds.dynamicds.view;
 
 import com.company.dynamicds.dynamicds.DynamicDataStoreRegister;
 import com.company.dynamicds.dynamicds.entity.DynamicDataStoreConfig;
@@ -13,7 +13,6 @@ import io.jmix.flowui.Dialogs;
 import io.jmix.flowui.Notifications;
 import io.jmix.flowui.UiComponents;
 import io.jmix.flowui.action.DialogAction;
-import io.jmix.flowui.component.grid.DataGrid;
 import io.jmix.flowui.kit.action.ActionVariant;
 import io.jmix.flowui.model.CollectionContainer;
 import io.jmix.flowui.view.*;
