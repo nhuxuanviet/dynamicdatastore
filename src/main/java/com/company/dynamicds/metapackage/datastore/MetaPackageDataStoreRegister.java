@@ -94,15 +94,22 @@ public class MetaPackageDataStoreRegister {
             // 4. Register descriptor with Jmix
             getDescriptorMap().put(storeName, descriptor);
 
-            // 5. Create and register Store
+            // 5. Create and register Store FIRST
             Store jmixStore = applicationContext.getBean(Store.class, storeName, descriptor);
             getStoresMap().put(storeName, jmixStore);
 
-            // 6. Create dynamic MetaClass and register with metadata
+            // 6. NOW create dynamic MetaClass (after Store exists)
             MetaClass metaClass = metaClassFactory.createMetaClass(metaPackage, storeName);
+
+            // 7. Set store for MetaClass (required for proper operation)
+            if (metaClass instanceof com.company.dynamicds.dynamicds.DynamicMetaClass dynamicMetaClass) {
+                dynamicMetaClass.setStore(jmixStore);
+            }
+
+            // 8. Register MetaClass with metadata
             registerMetaClass(metaClass, storeName);
 
-            // 7. Save to internal registry
+            // 9. Save to internal registry
             registeredStores.put(storeName, dataStore);
 
             log.info("✓ Successfully registered MetaPackage store: {}", storeName);
