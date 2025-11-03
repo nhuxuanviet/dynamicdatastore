@@ -111,8 +111,7 @@ public class MetaPackageExecutor {
                                              Integer firstResult,
                                              Integer maxResults) {
         long startTime = System.currentTimeMillis();
-        log.info("Executing meta package: {} with merge strategy: {}",
-                metaPackage.getName(), metaPackage.getMergeStrategy());
+        log.info("Executing meta package: {}", metaPackage.getName());
 
         // Load full MetaPackage with sources and mappings
         MetaPackage fullPackage = loadFullMetaPackage(metaPackage.getId());

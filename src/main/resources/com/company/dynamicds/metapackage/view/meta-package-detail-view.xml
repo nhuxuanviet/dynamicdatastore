@@ -73,7 +73,7 @@
 
             <textField id="nameField" property="name" required="true"/>
             <textField id="storeNameField" property="storeName"/>
-            <select id="mergeStrategyField" property="mergeStrategy" required="true"/>
+            <!-- mergeStrategy hidden: use relationships instead -->
             <checkbox id="isActiveField" property="isActive" enabled="false"
                       helperText="Use Activate/Deactivate buttons in list view"/>
             <textArea id="descriptionField" property="description" colspan="2" height="6em"/>

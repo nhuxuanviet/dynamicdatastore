@@ -5,6 +5,7 @@ import com.company.dynamicds.metapackage.entity.MetaPackage;
 import com.company.dynamicds.metapackage.entity.MetaPackageFieldMapping;
 import com.company.dynamicds.metapackage.entity.MetaPackageRelationship;
 import com.company.dynamicds.metapackage.entity.MetaPackageSource;
+import com.company.dynamicds.metapackage.enums.MergeStrategy;
 import com.company.dynamicds.utils.ui.GridEditorUtils;
 import com.company.dynamicds.view.main.MainView;
 import com.vaadin.flow.component.ClickEvent;
@@ -65,6 +66,12 @@ public class MetaPackageDetailView extends StandardDetailView<MetaPackage> {
         GridEditorUtils.setupInlineEditor(sourcesDataGrid);
         GridEditorUtils.setupInlineEditor(fieldMappingsDataGrid);
         GridEditorUtils.setupInlineEditor(relationshipsDataGrid);
+    }
+
+    @Subscribe
+    public void onInitEntity(final InitEntityEvent<MetaPackage> event) {
+        // Set default merge strategy (not used if relationships exist, but required for DB)
+        event.getEntity().setMergeStrategy(MergeStrategy.SEQUENTIAL);
     }
 
     @Install(to = "relationshipsDataGrid.create", subject = "initializer")

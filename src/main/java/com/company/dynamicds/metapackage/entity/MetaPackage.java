@@ -39,8 +39,7 @@ public class MetaPackage {
     @Column(name = "STORE_NAME", nullable = false, unique = true)
     private String storeName;
 
-    @NotNull
-    @Column(name = "MERGE_STRATEGY", nullable = false)
+    @Column(name = "MERGE_STRATEGY")
     private String mergeStrategy;
 
     @Column(name = "IS_ACTIVE")
@@ -81,7 +80,8 @@ public class MetaPackage {
     }
 
     public MergeStrategy getMergeStrategy() {
-        return mergeStrategy == null ? null : MergeStrategy.fromId(mergeStrategy);
+        // Default to SEQUENTIAL for backward compatibility (not used if relationships exist)
+        return mergeStrategy == null ? MergeStrategy.SEQUENTIAL : MergeStrategy.fromId(mergeStrategy);
     }
 
     public void setMergeStrategy(MergeStrategy mergeStrategy) {
