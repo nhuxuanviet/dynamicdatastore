@@ -21,9 +21,9 @@ public class MetaPackageSourceDetailView extends StandardDetailView<MetaPackageS
 //    @ViewComponent
 //    private DataGrid<MetaPackageFieldMapping> fieldMappingsDataGrid;
 
-    @Subscribe
-    public void onInit(final InitEvent event) {
-        // Setup inline editor for field mappings grid
+//    @Subscribe
+//    public void onInit(final InitEvent event) {
+//        // Setup inline editor for field mappings grid
 //        GridEditorUtils.setupInlineEditor(fieldMappingsDataGrid);
-    }
+//    }
 }

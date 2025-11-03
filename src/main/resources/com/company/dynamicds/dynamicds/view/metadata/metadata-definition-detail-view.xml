@@ -48,7 +48,7 @@
             <columns>
                 <column property="name" editable="true"/>
                 <column property="fieldType" editable="true">
-                    <comboBox id="fieldTypeEditor" itemsEnum="com.company.dynamicds.dynamicds.entity.MetadataFieldType"/>
+                    <Combobox id="fieldTypeEditor" itemsEnum="com.company.dynamicds.dynamicds.entity.MetadataFieldType"/>
                 </column>
                 <column property="description" editable="true"/>
                 <column property="require" editable="true"/>

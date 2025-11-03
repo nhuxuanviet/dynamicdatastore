@@ -15,7 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  * Allows activation/deactivation of meta packages
  */
 @Route(value = "meta-packages", layout = MainView.class)
-@ViewController(id = "dwh_MetaPackage.list")
+@ViewController(id = "MetaPackage.list")
 @ViewDescriptor(path = "meta-package-list-view.xml")
 @LookupComponent("metaPackagesDataGrid")
 @DialogMode(width = "64em")
@@ -38,6 +38,12 @@ public class MetaPackageListView extends StandardListView<MetaPackage> {
         MetaPackage selected = metaPackagesDataGrid.getSingleSelectedItem();
         if (selected == null) {
             notifications.create("Please select a MetaPackage").show();
+            return;
+        }
+
+        // Nếu đã active rồi thì thông báo và bỏ qua
+        if (Boolean.TRUE.equals(selected.getIsActive())) {
+            notifications.create("MetaPackage already activate").show();
             return;
         }
 

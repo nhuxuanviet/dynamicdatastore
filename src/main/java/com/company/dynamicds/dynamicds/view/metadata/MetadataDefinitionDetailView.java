@@ -103,35 +103,29 @@ public class MetadataDefinitionDetailView extends StandardDetailView<MetadataDef
 
     }
 
-    @Subscribe("metadataFieldsDataGrid.create")
-    public void onMetadataFieldsDataGridCreate(final io.jmix.flowui.action.list.CreateAction.ActionPerformedEvent event) {
-        // Prevent default behavior (opening detail view)
-        event.preventDefault();
-
-        // Create new MetadataField
+    @Subscribe("metadataFieldsDataGrid.createInline")
+    public void onCreateInlineAction(io.jmix.flowui.kit.action.ActionPerformedEvent event) {
+        // Tạo entity mới
         MetadataField newField = dataManager.create(MetadataField.class);
         newField.setMetadataDefinition(getEditedEntity());
 
-        // Merge into data context
-        MetadataField mergedField = dataContext.merge(newField);
+        // Đưa vào DataContext để quản lý state
+        MetadataField merged = dataContext.merge(newField);
 
-        // Add to collection
-        metadataFieldsDc.getMutableItems().add(mergedField);
+        // Thêm vào DC (sẽ hiện ngay trong grid)
+        metadataFieldsDc.getMutableItems().add(merged);
 
-        // Start editing the new row
-        metadataFieldsDataGrid.getEditor().editItem(mergedField);
+        // Bắt đầu edit inline dòng mới
+        metadataFieldsDataGrid.getEditor().editItem(merged);
     }
 
-    @Subscribe("metadataFieldsDataGrid.edit")
-    public void onMetadataFieldsDataGridEdit(final io.jmix.flowui.action.list.EditAction.ActionPerformedEvent event) {
-        // Prevent default behavior (opening detail view)
-        event.preventDefault();
-
-        // Get selected item and start inline editing
-        MetadataField selectedField = metadataFieldsDataGrid.getSingleSelectedItem();
-        if (selectedField != null) {
-            metadataFieldsDataGrid.getEditor().editItem(selectedField);
+    @Subscribe("metadataFieldsDataGrid.editInline")
+    public void onEditInlineAction(io.jmix.flowui.kit.action.ActionPerformedEvent event) {
+        MetadataField selected = metadataFieldsDataGrid.getSingleSelectedItem();
+        if (selected != null) {
+            metadataFieldsDataGrid.getEditor().editItem(selected);
         }
     }
+
 
 }

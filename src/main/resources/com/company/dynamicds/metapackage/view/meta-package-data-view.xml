@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="Meta Package Data Viewer"
+      focusComponent="dataGrid">
+
+    <data>
+        <!-- Danh sách MetaPackage đang active -->
+        <collection id="activeMetaPackagesDc"
+                    class="com.company.dynamicds.metapackage.entity.MetaPackage">
+            <loader id="activeMetaPackagesDl" readOnly="true">
+                <query>
+                    <![CDATA[select e from MetaPackage e where e.isActive = true order by e.name]]>
+                </query>
+            </loader>
+            <fetchPlan extends="_base"/>
+        </collection>
+
+        <!-- Bộ sưu tập KeyValueEntity - container đúng kiểu KeyValue -->
+        <keyValueCollection id="dataDc"/>
+    </data>
+
+    <facets>
+        <dataLoadCoordinator auto="false"/>
+    </facets>
+
+    <layout padding="true" spacing="true">
+        <hbox>
+            <entityComboBox id="metaPackageField"
+                            width="24em"
+                            metaClass="MetaPackage"
+                            itemsContainer="activeMetaPackagesDc"
+                            itemLabel="name"
+                            label="MetaPackage"/>
+            <button id="loadBtn" text="Load" icon="PLAY"/>
+        </hbox>
+
+        <dataGrid id="dataGrid"
+                  width="100%"
+                  minHeight="40em"
+                  dataContainer="dataDc"
+                  columnReorderingAllowed="true"
+                  allRowsVisible="false">
+            <columns resizable="true"/>
+        </dataGrid>
+    </layout>
+</view>
+
+
